@@ -37,7 +37,7 @@ const CheckOut = () => {
 
       <button
         onClick={goToCheckout}
-        className="mt-4 w-full py-3 bg-black text-white rounded-xl hover:bg-gold-base hover:text-black transition"
+        className="mt-4 w-full py-3 bg-black text-white rounded-xl hover:bg-gold-base hover:text-black transition dark:bg-gold-dark-20"
       >
         Proceed to Checkout
       </button>

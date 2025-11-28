@@ -72,7 +72,7 @@ const Fragrances = () => {
   }, [products]);
 
   return (
-    <div className="flex flex-col sm:flex-row gap-1 sm:gap-12 pt-10 border-t">
+    <div className="flex flex-col sm:flex-row gap-1 sm:gap-12 pt-10 border-t dark:text-white">
       <div className="min-w-60">
         <p
           onClick={() => setShowFilter((s) => !s)}
@@ -97,7 +97,19 @@ const Fragrances = () => {
             <label className="flex gap-2">
               <input
                 type="checkbox"
-                className="w-4 h-4"
+                className="
+      w-4 h-4 
+      appearance-none 
+      border border-gray-400 rounded
+      checked:bg-gold-base checked:border-gold-base
+      relative cursor-pointer
+      checked:after:content-['✔']
+      checked:after:text-white
+      checked:after:text-[10px]
+      checked:after:absolute
+      checked:after:left-[2px]
+      checked:after:top-[-1px]
+    "
                 checked={categories.includes("men")}
                 onChange={() => toggleCategory("men")}
               />
@@ -106,7 +118,19 @@ const Fragrances = () => {
             <label className="flex gap-2">
               <input
                 type="checkbox"
-                className="w-4 h-4"
+                className="
+      w-4 h-4 
+      appearance-none 
+      border border-gray-400 rounded
+      checked:bg-gold-base checked:border-gold-base
+      relative cursor-pointer
+      checked:after:content-['✔']
+      checked:after:text-white
+      checked:after:text-[10px]
+      checked:after:absolute
+      checked:after:left-[2px]
+      checked:after:top-[-1px]
+    "
                 checked={categories.includes("women")}
                 onChange={() => toggleCategory("women")}
               />
@@ -115,7 +139,19 @@ const Fragrances = () => {
             <label className="flex gap-2">
               <input
                 type="checkbox"
-                className="w-4 h-4"
+                className="
+      w-4 h-4 
+      appearance-none 
+      border border-gray-400 rounded
+      checked:bg-gold-base checked:border-gold-base
+      relative cursor-pointer
+      checked:after:content-['✔']
+      checked:after:text-white
+      checked:after:text-[10px]
+      checked:after:absolute
+      checked:after:left-[2px]
+      checked:after:top-[-1px]
+    "
                 checked={categories.includes("unsex")}
                 onChange={() => toggleCategory("unsex")}
               />
@@ -134,7 +170,19 @@ const Fragrances = () => {
             <label className="flex gap-2">
               <input
                 type="checkbox"
-                className="w-4 h-4"
+                className="
+      w-4 h-4 
+      appearance-none 
+      border border-gray-400 rounded
+      checked:bg-gold-base checked:border-gold-base
+      relative cursor-pointer
+      checked:after:content-['✔']
+      checked:after:text-white
+      checked:after:text-[10px]
+      checked:after:absolute
+      checked:after:left-[2px]
+      checked:after:top-[-1px]
+    "
                 checked={subCategories.includes("niche")}
                 onChange={() => toggleSubCategory("niche")}
               />
@@ -144,7 +192,19 @@ const Fragrances = () => {
             <label className="flex gap-2">
               <input
                 type="checkbox"
-                className="w-4 h-4"
+                className="
+      w-4 h-4 
+      appearance-none 
+      border border-gray-400 rounded
+      checked:bg-gold-base checked:border-gold-base
+      relative cursor-pointer
+      checked:after:content-['✔']
+      checked:after:text-white
+      checked:after:text-[10px]
+      checked:after:absolute
+      checked:after:left-[2px]
+      checked:after:top-[-1px]
+    "
                 checked={subCategories.includes("designer")}
                 onChange={() => toggleSubCategory("designer")}
               />
@@ -160,12 +220,24 @@ const Fragrances = () => {
         >
           <p className="mb-3 font-medium text-sm">SEASON</p>
           <div className="flex flex-col gap-2 text-sm font-light">
-            <label className="flex gap-2">
+            <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                className="w-4 h-4"
                 checked={season.includes("winter")}
                 onChange={() => toggleSeason("winter")}
+                className="
+      w-4 h-4 
+      appearance-none 
+      border border-gray-400 rounded
+      checked:bg-gold-base checked:border-gold-base
+      relative cursor-pointer
+      checked:after:content-['✔']
+      checked:after:text-white
+      checked:after:text-[10px]
+      checked:after:absolute
+      checked:after:left-[2px]
+      checked:after:top-[-1px]
+    "
               />
               Winter
             </label>
@@ -173,7 +245,19 @@ const Fragrances = () => {
             <label className="flex gap-2">
               <input
                 type="checkbox"
-                className="w-4 h-4"
+                className="
+      w-4 h-4 
+      appearance-none 
+      border border-gray-400 rounded
+      checked:bg-gold-base checked:border-gold-base
+      relative cursor-pointer
+      checked:after:content-['✔']
+      checked:after:text-white
+      checked:after:text-[10px]
+      checked:after:absolute
+      checked:after:left-[2px]
+      checked:after:top-[-1px]
+    "
                 checked={season.includes("summer")}
                 onChange={() => toggleSeason("summer")}
               />
@@ -188,13 +272,19 @@ const Fragrances = () => {
           <Title text1="ALL" text2="FRAGRANCES" />
 
           <select
-            className="border px-2 text-sm"
+            className="border px-2 text-sm dark:text-white"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
-            <option value="relevant">Sort by: Relevant</option>
-            <option value="high-low">Sort by: High to Low</option>
-            <option value="low-high">Sort by: Low to High</option>
+            <option value="relevant" className="dark:text-black">
+              Sort by: Relevant
+            </option>
+            <option value="high-low" className="dark:text-black">
+              Sort by: High to Low
+            </option>
+            <option value="low-high" className="dark:text-black">
+              Sort by: Low to High
+            </option>
           </select>
         </div>
 

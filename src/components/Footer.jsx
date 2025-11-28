@@ -9,7 +9,7 @@ const Footer = () => {
           <span className="text-3xl text-[#D4AF37] prata-regular mb-5">
             ROSE MISK
           </span>
-          <p className="w-full md:w-2/3 text-gray-400">
+          <p className="w-full md:w-2/3 text-gray-400 dark:text-white">
             Lorem ipsum dolor, sit amet consectetur adipisicing elit. Quibusdam
             consectetur architecto quae ex veritatis? Ratione, dolores? Aut
             veritatis sed nam asperiores iusto fugiat, ipsa accusamus, voluptate
@@ -19,7 +19,7 @@ const Footer = () => {
 
         <div>
           <p className="text-xl font-medium mb-5">COMPANY </p>
-          <ul className="flex flex-col gap-1 text-gray-600">
+          <ul className="flex flex-col gap-1 text-gray-600 dark:text-white">
             <li>Home</li>
             <li>About us</li>
             <li>Delivery</li>
@@ -29,7 +29,7 @@ const Footer = () => {
 
         <div>
           <p className="text-xl font-medium mb-5">GET IN TOUCH </p>
-          <ul className="flex flex-col gap-2 text-gray-600">
+          <ul className="flex flex-col gap-2 text-gray-600 dark:text-white">
             <li className="flex items-center gap-2">
               <Phone size={16} /> +20 0111 684 5684
             </li>
@@ -58,8 +58,8 @@ const Footer = () => {
       </div>
 
       <div>
-        <hr className="bg-gray-200" />
-        <p className="py-5 text-center text-sm">
+        <hr className="text-gray-200" />
+        <p className="py-5 text-center text-sm dark:text-gold-light-20">
           All Copy Right are reserverd from Rose Misk | Website is made by
           Mustafa Melake
         </p>

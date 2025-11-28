@@ -14,7 +14,7 @@ const Login = () => {
 
   return (
     <div className="flex justify-center items-center min-h-screen px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+      <div className="w-full max-w-md bg-white dark:bg-black rounded-2xl shadow-lg p-8">
         <h2 className="text-3xl prata-regular text-gold-base text-center mb-6">
           Welcome Back
         </h2>
@@ -24,7 +24,7 @@ const Login = () => {
             type="email"
             name="email"
             placeholder="Email Address"
-            className="border p-3 rounded-xl outline-none focus:border-black"
+            className="inputStyle dark:bg-black dark:border dark:border-white/20 dark:text-gray-300"
             onChange={handleChange}
           />
 
@@ -32,21 +32,21 @@ const Login = () => {
             type="password"
             name="password"
             placeholder="Password"
-            className="border p-3 rounded-xl outline-none focus:border-black"
+            className="inputStyle dark:bg-black dark:border dark:border-white/20 dark:text-gray-300"
             onChange={handleChange}
           />
 
           <button
             type="submit"
-            className="w-full py-3 bg-black text-white rounded-xl hover:bg-gold-base hover:text-black transition"
+            className="w-full py-3 bg-black text-white rounded-xl hover:bg-gold-base hover:text-black transition dark:bg-gold-dark-20"
           >
             Login
           </button>
         </form>
 
-        <p className="text-center mt-4 text-sm">
+        <p className="text-center mt-4 text-sm dark:text-white">
           Don't have an account?{" "}
-          <Link to="/signup" className="text-black underline">
+          <Link to="/signup" className="text-black underline dark:text-white">
             Sign Up
           </Link>
         </p>

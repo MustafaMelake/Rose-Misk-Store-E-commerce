@@ -13,26 +13,29 @@ import NavBar from "./components/NavBar";
 import Footer from "./components/Footer";
 import SearchBar from "./components/SearchBar";
 import { ShopContext } from "./context/ShopContext";
+import { ThemeProvider } from "./components/ThemeContext";
 
 const App = () => {
   const { searchOpen } = useContext(ShopContext);
   return (
-    <div className="px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
-      <NavBar />
-      <SearchBar isOpen={searchOpen} />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/Fragrances" element={<Fragrances />} />
-        <Route path="/About" element={<About />} />
-        <Route path="/Contact" element={<Contact />} />
-        <Route path="/product/:id" element={<Product />} />
-        <Route path="/Cart" element={<Cart />} />
-        <Route path="/Login" element={<Login />} />
-        <Route path="/PlaceOrder" element={<PlaceOrder />} />
-        <Route path="/Orders" element={<Orders />} />
-      </Routes>
-      <Footer />
-    </div>
+    <ThemeProvider>
+      <div className="px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-white dark:bg-black">
+        <NavBar />
+        <SearchBar isOpen={searchOpen} />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/Fragrances" element={<Fragrances />} />
+          <Route path="/About" element={<About />} />
+          <Route path="/Contact" element={<Contact />} />
+          <Route path="/product/:id" element={<Product />} />
+          <Route path="/Cart" element={<Cart />} />
+          <Route path="/Login" element={<Login />} />
+          <Route path="/PlaceOrder" element={<PlaceOrder />} />
+          <Route path="/Orders" element={<Orders />} />
+        </Routes>
+        <Footer />
+      </div>
+    </ThemeProvider>
   );
 };
 

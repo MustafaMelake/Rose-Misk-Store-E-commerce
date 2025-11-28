@@ -10,7 +10,6 @@ const Product = () => {
 
   const [productItem, setProductItem] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
-
   const [error, setError] = useState("");
   const [added, setAdded] = useState(false);
 
@@ -63,7 +62,10 @@ const Product = () => {
         {Array(emptyStars)
           .fill(0)
           .map((_, i) => (
-            <span key={"empty" + i} className="text-gray-300 text-xl">
+            <span
+              key={"empty" + i}
+              className="text-gray-400 dark:text-gray-600 text-xl"
+            >
               ★
             </span>
           ))}
@@ -72,28 +74,35 @@ const Product = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 py-10">
+    <div
+      className="grid grid-cols-1 lg:grid-cols-2 gap-12 py-10 
+        text-black dark:text-white"
+    >
+      {/* Image */}
       <div className="w-full">
         <img
           src={productItem.image[0]}
           alt={productItem.name}
-          className="w-full rounded-3xl shadow-lg"
+          className="w-full rounded-3xl shadow-lg dark:shadow-none"
         />
       </div>
 
+      {/* Right Section */}
       <div className="flex flex-col gap-6">
         <h1 className="text-3xl font-semibold">{productItem.name}</h1>
 
         <div className="flex items-center gap-2">
           {renderStars(productItem.rating)}
-          <span className="text-gray-600 font-medium">
+          <span className="text-gray-600 dark:text-gray-300 font-medium">
             {productItem.rating.toFixed(1)} ({productItem.reviews})
           </span>
         </div>
 
-        <p className="text-gray-600">{productItem.description}</p>
+        <p className="text-gray-600 dark:text-gray-300">
+          {productItem.description}
+        </p>
 
-        {/* 🔥 السعر الديناميكي */}
+        {/* Dynamic Price */}
         <p className="text-3xl text-gold-base">
           {currency}
           {selectedSize
@@ -101,6 +110,7 @@ const Product = () => {
             : productItem.price.toFixed(2)}
         </p>
 
+        {/* Sizes */}
         <div>
           <p className="font-semibold mb-2">Available Sizes</p>
           <div className="flex gap-3">
@@ -108,12 +118,15 @@ const Product = () => {
               <button
                 key={s}
                 onClick={() => setSelectedSize(s)}
-                className={`px-4 py-2 border rounded-xl transition cursor-pointer 
+                className={`
+                  px-4 py-2 border rounded-xl transition cursor-pointer 
+                  border-gray-400 dark:border-gray-600
                   ${
                     selectedSize === s
-                      ? "bg-black text-white"
-                      : "hover:bg-black hover:text-white"
-                  }`}
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : "hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+                  }
+                `}
               >
                 {s}
               </button>
@@ -121,17 +134,18 @@ const Product = () => {
           </div>
         </div>
 
+        {/* Add to Cart */}
         <div className="flex flex-col gap-2">
           <button
             onClick={handleAdd}
             className={`
-      w-full py-3 rounded-xl transition cursor-pointer text-lg font-medium
-      ${
-        added
-          ? "bg-gold-base text-black"
-          : "bg-black text-white hover:bg-gold-base hover:text-black"
-      }
-    `}
+              w-full py-3 rounded-xl transition cursor-pointer text-lg font-medium
+              ${
+                added
+                  ? "bg-gold-base text-black"
+                  : "bg-black text-white dark:bg-white dark:text-black hover:bg-gold-base hover:text-black"
+              }
+            `}
           >
             {added ? "✓ Added" : "Add to Cart"}
           </button>
@@ -141,11 +155,13 @@ const Product = () => {
           )}
         </div>
 
+        {/* More Products */}
         {products && products.length > 0 && (
           <div className="mt-16">
             <h2 className="text-2xl font-semibold mb-6">
               More from {productItem.company}
             </h2>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
               {products
                 .filter(

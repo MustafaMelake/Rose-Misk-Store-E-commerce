@@ -37,7 +37,7 @@ const ShopContextProvider = (props) => {
     return count;
   }, [cartItems]);
 
-  const currency = "$";
+  const currency = "L.E";
   const delivery_fee = 10;
 
   // دالة لحساب السعر حسب الحجم

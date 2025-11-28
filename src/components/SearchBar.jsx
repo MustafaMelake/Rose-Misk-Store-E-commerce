@@ -40,11 +40,11 @@ const SearchBar = () => {
   return (
     <div
       ref={boxRef}
-      className="fixed top-[70px] left-0 w-full bg-white border-b shadow-lg z-50 px-4 py-3"
+      className="fixed top-[70px] left-0 w-full bg-white dark:bg-black border-b shadow-lg z-50 px-4 py-3 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]"
     >
       <input
         type="text"
-        className="w-full border px-3 py-2 rounded-md"
+        className="w-full border dark:border-gray-800 px-3 py-2 rounded-md dark:text-white"
         placeholder="Search for fragrances..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}

@@ -12,7 +12,6 @@ const PlaceOrder = () => {
   } = useContext(ShopContext);
 
   /** ---------------- CART DATA ---------------- **/
-
   const cartData = useMemo(() => {
     let arr = [];
     for (const productId in cartItems) {
@@ -41,16 +40,15 @@ const PlaceOrder = () => {
       cartData.reduce((total, item) => total + item.price * item.quantity, 0),
     [cartData]
   );
-
   const total = subtotal + delivery_fee;
 
   /** ---------------- PAYMENT ---------------- **/
   const [paymentMethod, setPaymentMethod] = useState("cod");
 
   return (
-    <div className="py-10 px-4 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10">
+    <div className="py-10 px-4 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-black dark:text-white">
       {/* ---------------- LEFT SIDE: DELIVERY FORM ---------------- */}
-      <div className="md:col-span-2">
+      <div className="md:col-span-2 space-y-6">
         <h2 className="text-2xl font-semibold mb-6 tracking-wide">
           DELIVERY <span className="font-light">INFORMATION</span>
         </h2>
@@ -61,45 +59,73 @@ const PlaceOrder = () => {
             <input
               type="text"
               placeholder="First name"
-              className="inputStyle"
+              className="inputStyle dark:bg-gray-900 dark:border-gray-700 dark:text-white"
             />
-            <input type="text" placeholder="Last name" className="inputStyle" />
+            <input
+              type="text"
+              placeholder="Last name"
+              className="inputStyle dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+            />
           </div>
 
           {/* Email */}
           <input
             type="email"
             placeholder="Email address"
-            className="inputStyle"
+            className="inputStyle dark:bg-gray-900 dark:border-gray-700 dark:text-white"
           />
 
           {/* Street */}
-          <input type="text" placeholder="Street" className="inputStyle" />
+          <input
+            type="text"
+            placeholder="Street"
+            className="inputStyle dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+          />
 
           {/* City / State */}
           <div className="grid grid-cols-2 gap-4">
-            <input type="text" placeholder="City" className="inputStyle" />
-            <input type="text" placeholder="State" className="inputStyle" />
+            <input
+              type="text"
+              placeholder="City"
+              className="inputStyle dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+            />
+            <input
+              type="text"
+              placeholder="State"
+              className="inputStyle dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+            />
           </div>
 
           {/* Zipcode / Country */}
           <div className="grid grid-cols-2 gap-4">
-            <input type="text" placeholder="Zipcode" className="inputStyle" />
-            <input type="text" placeholder="Country" className="inputStyle" />
+            <input
+              type="text"
+              placeholder="Zipcode"
+              className="inputStyle dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+            />
+            <input
+              type="text"
+              placeholder="Country"
+              className="inputStyle dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+            />
           </div>
 
           {/* Phone */}
-          <input type="text" placeholder="Phone" className="inputStyle" />
+          <input
+            type="text"
+            placeholder="Phone"
+            className="inputStyle dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+          />
         </form>
       </div>
 
       {/* ---------------- RIGHT SIDE: CART SUMMARY ---------------- */}
-      <div className="rounded-xl border shadow-sm p-6 h-fit">
+      <div className="rounded-xl border border-gray-300 dark:border-gray-700 shadow-sm dark:shadow-none p-6 bg-white dark:bg-gray-900">
         <h2 className="text-xl font-semibold tracking-wide mb-4">
           CART <span className="font-light">TOTALS</span>
         </h2>
 
-        <div className="flex justify-between py-2 border-b">
+        <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-600">
           <span>Subtotal</span>
           <span>
             {currency}
@@ -107,7 +133,7 @@ const PlaceOrder = () => {
           </span>
         </div>
 
-        <div className="flex justify-between py-2 border-b">
+        <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-600">
           <span>Shipping Fee</span>
           <span>
             {currency}
@@ -130,13 +156,14 @@ const PlaceOrder = () => {
 
         <div className="flex flex-col gap-3">
           {/* Cash On Delivery */}
-          <label className="paymentOption">
+          <label className="flex items-center gap-2">
             <input
               type="radio"
               name="payment"
               value="cod"
               checked={paymentMethod === "cod"}
               onChange={() => setPaymentMethod("cod")}
+              className="accent-gold-base"
             />
             <span className="flex items-center gap-2 font-medium">
               <span className="w-3 h-3 bg-green-500 rounded-full"></span>
@@ -147,7 +174,7 @@ const PlaceOrder = () => {
 
         <button
           onClick={() => placeOrder(cartItems, paymentMethod)}
-          className="w-full mt-6 py-3 bg-black text-white rounded-xl hover:bg-gold-base hover:text-black transition"
+          className="w-full mt-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl hover:bg-gold-base hover:text-black transition"
         >
           Place Order
         </button>
