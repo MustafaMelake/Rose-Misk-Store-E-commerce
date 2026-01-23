@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { Route, Routes } from "react-router-dom";
+import { HashRouter, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Fragrances from "./pages/Fragrances";
 import About from "./pages/About";
@@ -22,17 +22,19 @@ const App = () => {
       <div className="px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-white dark:bg-black">
         <NavBar />
         <SearchBar isOpen={searchOpen} />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/Fragrances" element={<Fragrances />} />
-          <Route path="/About" element={<About />} />
-          <Route path="/Contact" element={<Contact />} />
-          <Route path="/product/:id" element={<Product />} />
-          <Route path="/Cart" element={<Cart />} />
-          <Route path="/Login" element={<Login />} />
-          <Route path="/PlaceOrder" element={<PlaceOrder />} />
-          <Route path="/Orders" element={<Orders />} />
-        </Routes>
+        <HashRouter>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/Fragrances" element={<Fragrances />} />
+            <Route path="/About" element={<About />} />
+            <Route path="/Contact" element={<Contact />} />
+            <Route path="/product/:id" element={<Product />} />
+            <Route path="/Cart" element={<Cart />} />
+            <Route path="/Login" element={<Login />} />
+            <Route path="/PlaceOrder" element={<PlaceOrder />} />
+            <Route path="/Orders" element={<Orders />} />
+          </Routes>
+        </HashRouter>
         <Footer />
       </div>
     </ThemeProvider>
