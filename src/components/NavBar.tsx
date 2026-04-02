@@ -1,30 +1,54 @@
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { NavLink, Link } from "react-router-dom";
-import { Search, User, ShoppingBag, Menu, ArrowLeft } from "lucide-react";
+import {
+  Search,
+  User,
+  ShoppingBag,
+  Menu,
+  ArrowLeft,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { ShopContext } from "../context/ShopContext";
-import { ThemeContext } from "../components/ThemeContext";
-import { Sun, Moon } from "lucide-react";
+import { ThemeContext } from "./ThemeContext";
 
-const NavBar = () => {
-  const [isOpen, SetIsOpen] = useState(false); // sidebar
-  const [open, setOpen] = useState(false); // user menu
-  const { theme, toggleTheme } = useContext(ThemeContext);
+const NavBar: React.FC = () => {
+  const [isOpen, SetIsOpen] = useState<boolean>(false); // sidebar
+  const [open, setOpen] = useState<boolean>(false); // user menu
 
-  const { setSearchOpen, getCartCount } = useContext(ShopContext);
+  // 1. التعامل مع ShopContext (بما إنه ممكن يكون null)
+  const shopContext = useContext(ShopContext);
+  if (!shopContext) return null;
+  const { setSearchOpen, getCartCount } = shopContext;
 
-  const userRef = useRef(null);
-  const sideRef = useRef(null);
+  // 2. التعامل مع ThemeContext (يفضل مستقبلاً نحوله لـ TS أيضاً)
+  const themeContext = useContext(ThemeContext);
+  const theme = themeContext?.theme;
+  const toggleTheme = themeContext?.toggleTheme;
+
+  // 3. تحديد أنواع الـ Refs (HTMLDivElement لأنها مرتبطة بـ div)
+  const userRef = useRef<HTMLDivElement>(null);
+  const sideRef = useRef<HTMLDivElement>(null);
 
   /** ---------------- CLOSE ON OUTSIDE CLICK ---------------- **/
   useEffect(() => {
-    const handleClick = (e) => {
+    // تحديد نوع الـ event كـ MouseEvent
+    const handleClick = (e: MouseEvent) => {
       // close user menu
-      if (open && userRef.current && !userRef.current.contains(e.target)) {
+      if (
+        open &&
+        userRef.current &&
+        !userRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
 
       // close sidebar
-      if (isOpen && sideRef.current && !sideRef.current.contains(e.target)) {
+      if (
+        isOpen &&
+        sideRef.current &&
+        !sideRef.current.contains(e.target as Node)
+      ) {
         SetIsOpen(false);
       }
     };
@@ -62,7 +86,7 @@ const NavBar = () => {
       <div className="flex items-center gap-6">
         <Search
           className="w-5 cursor-pointer dark:text-white"
-          onClick={() => setSearchOpen((prev) => !prev)}
+          onClick={() => setSearchOpen((prev: boolean) => !prev)}
         />
 
         {/* USER MENU */}

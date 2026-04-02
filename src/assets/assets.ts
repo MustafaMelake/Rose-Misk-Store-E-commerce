@@ -4,19 +4,38 @@ import Layton from "./layton.png";
 import Paradise from "./paradise.jpg";
 import SideEffect from "./side-effect.png";
 import SpiceBomb from "./spice-bomb.png";
-import Tobacoo from "./tobacoo.png";
+import Tobacco from "./tobacoo.png"; // تعديل الاسم لـ Tobacco
 import Logo from "./logo.jpg";
 import HeroIMG from "./Hero-img.jpg";
 import Elixir from "./Screenshot 2025-11-19 155924.png";
 import Location from "./Location.png";
 
+// تعريف الواجهة للمنتج لضمان دقة البيانات في كل المشروع
+export interface Product {
+  id: number;
+  name: string;
+  description: string;
+  company?: string; // اختياري
+  price: number;
+  image: string[];
+  category: "men" | "women" | "unisex";
+  Subcategory: "niche" | "designer";
+  size: string[];
+  date: Date;
+  bestSeller: boolean;
+  season?: "winter" | "summer" | "spring" | "autumn";
+  rating?: number;
+  reviews?: number;
+}
+
 export const assets = { Location, Logo, HeroIMG };
 
-export const products = [
+export const products: Product[] = [
   {
     id: 1,
-    name: "Angle Share",
-    description: "From the best Bozy fragrance and the best Kilian seller",
+    name: "Kilian Angels' Share",
+    description:
+      "A sophisticated boozy masterpiece, capturing the essence of cognac saved in oak casks.",
     company: "By Kilian",
     price: 100,
     image: [AngleShare],
@@ -29,13 +48,13 @@ export const products = [
   },
   {
     id: 2,
-    name: "Angle Share Paradise",
+    name: "Kilian Angels' Share Paradise",
     description:
-      "From the best Bozy fragrance and the best Kilian seller star boy",
+      "An exotic twist on the original classic, blending warm cognac with tropical warmth.",
     company: "By Kilian",
     price: 150,
     image: [AngleShareP],
-    category: "unsex",
+    category: "unisex",
     Subcategory: "niche",
     size: ["30ML", "50ML", "100ML"],
     date: new Date("2025-11-13"),
@@ -45,8 +64,9 @@ export const products = [
   },
   {
     id: 3,
-    name: "Layton De Marly",
-    description: "From the best De Marly fragrance and its daily use",
+    name: "Parfums de Marly Layton",
+    description:
+      "An addictive, elegant fragrance that combines fresh lavender with warm vanilla and precious woods.",
     price: 200,
     image: [Layton],
     category: "men",
@@ -57,8 +77,9 @@ export const products = [
   },
   {
     id: 4,
-    name: "JPG Paradise",
-    description: "From the best Summer and the best JPG seller star boy",
+    name: "Jean Paul Gaultier Le Beau Paradise Garden",
+    description:
+      "A fresh, green, and aquatic scent that brings a tropical paradise to your everyday summer vibe.",
     company: "JPG",
     price: 90,
     image: [Paradise],
@@ -71,9 +92,9 @@ export const products = [
   },
   {
     id: 5,
-    name: "Intio Side Effect",
+    name: "Initio Side Effect",
     description:
-      "From the best Tobacco fragrance and the best Initio seller star boy",
+      "A bold combination of tobacco, vanilla, and rum that leaves a powerful and mysterious trail.",
     price: 300,
     image: [SideEffect],
     category: "men",
@@ -84,9 +105,9 @@ export const products = [
   },
   {
     id: 6,
-    name: "Spice Bomb Extreme",
+    name: "Viktor&Rolf Spicebomb Extreme",
     description:
-      "From the best winter fragrance and the best Vanilla seller star boy",
+      "An explosion of heat! Intense black pepper and cumin blended with sweet tobacco for cold nights.",
     price: 220,
     image: [SpiceBomb],
     category: "men",
@@ -99,9 +120,9 @@ export const products = [
     id: 7,
     name: "Tom Ford Tobacco Vanille",
     description:
-      "From the best Tom Ford fragrances and the best tobacco seller star boy",
+      "A modern take on an old-world gentleman's club; a classic tobacco scent infused with creamy tonka and vanilla.",
     price: 150,
-    image: [Tobacoo],
+    image: [Tobacco],
     category: "men",
     Subcategory: "niche",
     size: ["30ML", "50ML", "100ML"],
@@ -110,8 +131,9 @@ export const products = [
   },
   {
     id: 8,
-    name: "JPG Elixir",
-    description: "From the best Winter and the best JPG seller star boy",
+    name: "Jean Paul Gaultier Le Male Elixir",
+    description:
+      "A burning-hot fragrance with intense woody-aromatic notes, perfect for the modern confident man.",
     company: "JPG",
     price: 230,
     image: [Elixir],

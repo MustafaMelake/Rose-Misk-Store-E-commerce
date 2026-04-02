@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
 import { Route, Routes } from "react-router-dom";
+// بنشيل امتداد .jsx لأن TypeScript بيعرف يوصل للملفات تلقائياً
 import Home from "./pages/Home";
 import Fragrances from "./pages/Fragrances";
 import About from "./pages/About";
@@ -15,11 +16,20 @@ import SearchBar from "./components/SearchBar";
 import { ShopContext } from "./context/ShopContext";
 import { ThemeProvider } from "./components/ThemeContext";
 
-const App = () => {
-  const { searchOpen } = useContext(ShopContext);
+// تعريف الـ Component باستخدام React.FC (Functional Component)
+const App: React.FC = () => {
+  // ملاحظة: الـ TypeScript هيطلع "Warning" بسيط هنا لحد ما نحول ملف ShopContext لـ .tsx
+  const context = useContext(ShopContext);
+
+  if (!context) {
+    return null; // حماية في حالة الـ Context مكنش موجود
+  }
+
+  const { searchOpen } = context;
+
   return (
     <ThemeProvider>
-      <div className="px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-white dark:bg-black">
+      <div className="px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-white dark:bg-black min-h-screen">
         <NavBar />
         <SearchBar isOpen={searchOpen} />
         <Routes>
