@@ -1,6 +1,7 @@
 import React from "react";
-import { Link } from "react-router-dom"; // استيراد Link للتنقل
+import Link from "next/link";
 import { assets } from "../assets/assets";
+import Image from "next/image";
 
 const Hero: React.FC = () => {
   return (
@@ -16,24 +17,30 @@ const Hero: React.FC = () => {
           <h1 className="prata-regular text-3xl sm:py-3 lg:text-5xl leading-relaxed">
             Latest Arrivals
           </h1>
-
-          {/* تعديل: تحويل النص لرابط ينقلك لصفحة العطور */}
           <Link
-            to="/fragrances"
+            href="/fragrances"
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-all"
           >
-            <p className="font-semibold text-sm md:text-base">SHOP NOW</p>
-            <p className="w-8 md:w-11 h-[2px] bg-black dark:bg-gray-800"></p>
+            <button
+              onClick={() => (window.location.href = "/fragrances")}
+              className="px-8 py-3 bg-black dark:bg-gold-base text-white dark:text-black uppercase text-xs tracking-[0.2em] font-bold hover:opacity-80 transition-all"
+            >
+              Start Shopping
+            </button>
           </Link>
         </div>
       </div>
-
       {/* Right Side */}
-      <img
-        src={assets.HeroIMG}
-        className="w-full sm:w-1/2 object-cover"
-        alt="Rose Misk Hero"
-      />
+      <div className="relative aspect-[2/1] w-full overflow-hidden">
+        <Image
+          src={assets.HeroIMG}
+          alt="Rose Misk | Exquisite Naxos-Inspired Fragrances Promotional Banner"
+          fill
+          priority
+          sizes="(max-width: 640px) 100vw, 100vw"
+          className="w-full sm:w-1/2 object-cover"
+        />
+      </div>
     </div>
   );
 };

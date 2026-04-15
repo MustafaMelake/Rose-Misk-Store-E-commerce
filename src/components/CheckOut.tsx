@@ -2,10 +2,8 @@ import React, { useContext } from "react";
 import { ShopContext } from "../context/ShopContext";
 
 const CheckOut: React.FC = () => {
-  // 1. الوصول للـ Context
   const context = useContext(ShopContext);
 
-  // 2. حماية التطبيق في حالة الـ Context مش جاهز
   if (!context) return null;
 
   const { currency, delivery_fee, subtotal, total, goToCheckout } = context;

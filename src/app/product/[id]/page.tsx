@@ -1,0 +1,225 @@
+"use client";
+
+import React, { useContext, useEffect, useState, useMemo } from "react";
+import { useParams } from "next/navigation";
+import Image from "next/image";
+import { ShopContext } from "../../../context/ShopContext";
+import ProductItem from "../../../components/ProductItem";
+import { renderStars } from "../../../components/Stars";
+import Footer from "@/components/Footer";
+
+interface ProductType {
+  id: number;
+  name: string;
+  images: string[];
+  description: string;
+  price: number;
+  size: string[];
+  company: string;
+  rating: number;
+  reviews: number;
+  variants: { volume: string; price: number; stock: number }[];
+  category?: string;
+  Subcategory?: string;
+}
+const Product: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const context = useContext(ShopContext);
+  if (!context) return null;
+
+  const { products, currency, addToCart, getPriceBySize } = context;
+  const [productItem, setProductItem] = useState<ProductType | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
+  const [added, setAdded] = useState<boolean>(false);
+
+  const handleAdd = () => {
+    if (!selectedSize) {
+      setError("Please select a size first");
+      return;
+    }
+
+    if (productItem) {
+      addToCart(productItem.id, selectedSize);
+      setError("");
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    }
+  };
+
+  useEffect(() => {
+    if (Array.isArray(products) && products.length > 0) {
+      const item = products.find((p) => Number(p.id) === Number(id));
+      if (item) {
+        // 1. استخراج السعر من أول Variant عشان الـ Interface
+        const defaultPrice = item.variants?.[0]?.price || 0;
+
+        setProductItem({
+          ...item,
+          price: defaultPrice, // إضافة السعر هنا حلت مشكلة Error 2345
+          images: item.images || [], // Prisma بترجع images مصفوفة
+          company: item.company || "Rose Misk",
+          rating: (item as any).rating || 0, // استخدام as any مؤقتاً لو مش موجودة في تعريف Prisma
+          reviews: (item as any).reviews || 0,
+          size: item.variants ? item.variants.map((v: any) => v.volume) : [],
+        });
+        setSelectedSize(null);
+      }
+    }
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+    }
+  }, [id, products]);
+
+  const relatedProducts = useMemo(() => {
+    if (!productItem) return [];
+    return products
+      .filter(
+        (p: any) => p.company === productItem.company && p.id !== productItem.id
+      )
+      .slice(0, 4);
+  }, [products, productItem]);
+
+  if (!productItem) {
+    return (
+      <div className="py-20 text-center animate-pulse text-gray-500">
+        Loading exquisite fragrance...
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="py-10 animate-fadeIn container mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+          {/* Left Side: Image Gallery */}
+          <div className="w-full space-y-4">
+            <div className="relative overflow-hidden rounded-3xl bg-gray-50 dark:bg-zinc-900 aspect-square">
+              <Image
+                src={productItem.images?.[0] || "/placeholder.png"}
+                alt={productItem.name || "Product image"}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover hover:scale-105 transition-transform duration-700"
+                priority
+              />
+            </div>
+          </div>
+
+          {/* Right Side: Product Details */}
+          <div className="flex flex-col">
+            <p className="text-gold-base font-medium tracking-widest uppercase text-sm mb-2">
+              {productItem.company}
+            </p>
+            <h1 className="text-4xl prata-regular mb-4 dark:text-white">
+              {productItem.name}
+            </h1>
+
+            <div className="flex items-center gap-4 mb-6">
+              {renderStars(productItem.rating)}
+              <span className="text-gray-400 text-sm">
+                {productItem.rating.toFixed(1)}
+                {/*{productItem.reviews} Verified
+              Reviews*/}
+              </span>
+            </div>
+
+            <div className="h-[1px] bg-gray-100 dark:bg-zinc-800 w-full mb-6"></div>
+
+            <p className="text-gray-600 dark:text-zinc-400 leading-relaxed mb-8 text-lg">
+              {productItem.description}
+            </p>
+
+            {/* Price Section */}
+            <div className="mb-8">
+              <p className="text-sm text-gray-400 uppercase mb-1">
+                Current Price
+              </p>
+              <p className="text-4xl font-bold text-gold-base">
+                {currency}
+                {selectedSize
+                  ? (getPriceBySize(productItem.id, selectedSize) || 0).toFixed(
+                      2
+                    )
+                  : (productItem.price || 0).toFixed(2)}
+              </p>
+            </div>
+
+            {/* Sizes Selection */}
+            <div className="mb-10">
+              <div className="flex justify-between items-center mb-4">
+                <p className="font-bold uppercase text-xs tracking-widest dark:text-white">
+                  Select Volume
+                </p>
+                {error && (
+                  <span className="text-red-500 text-xs animate-bounce font-bold">
+                    {error}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {productItem.size.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setSelectedSize(s);
+                      setError("");
+                    }}
+                    className={`min-w-[80px] py-3 px-4 rounded-xl border-2 transition-all duration-300 font-medium ${
+                      selectedSize === s
+                        ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black shadow-lg"
+                        : "border-gray-100 dark:border-zinc-800 hover:border-gold-base dark:text-zinc-400"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <button
+              onClick={handleAdd}
+              disabled={added}
+              className={`w-full py-5 rounded-2xl text-lg font-bold tracking-widest transition-all duration-500 shadow-2xl ${
+                added
+                  ? "bg-gold-dark-20 text-white translate-y-[-2px]"
+                  : "bg-black dark:bg-gold-base text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-gold-light-20"
+              }`}
+            >
+              {added ? "ADDED TO COLLECTION ✓" : "ADD TO CART"}
+            </button>
+          </div>
+        </div>
+
+        {/* Recommended Section */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-32">
+            <div className="flex flex-col items-center mb-12">
+              <h2 className="text-3xl prata-regular mb-2 dark:text-white">
+                More from {productItem.company}
+              </h2>
+              <div className="w-20 h-1 bg-gold-base"></div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {relatedProducts.map((p: any) => (
+                <ProductItem
+                  key={p.id}
+                  id={p.id}
+                  image={p.images}
+                  name={p.name}
+                  price={p.variants?.[0]?.price || 0}
+                  currency={currency}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <Footer />
+    </>
+  );
+};
+
+export default Product;

@@ -1,0 +1,219 @@
+"use server";
+import { prisma } from "../prisma";
+import { OrderStatus } from "../../src/generated/prisma";
+import { auth } from "../auth";
+import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
+
+export async function createOrder(
+  userId: string,
+  orderData: any,
+  items: { id: number; size: string; quantity: number }[]
+) {
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      let serverTotal = 0;
+      const orderItemsToCreate = [];
+
+      for (const item of items) {
+        const variant = await tx.productVariant.findFirst({
+          where: { productId: item.id, volume: item.size },
+        });
+
+        if (!variant || variant.stock < item.quantity) {
+          throw new Error(
+            `المنتج ذو الحجم ${item.size} غير متوفر بالكمية المطلوبة.`
+          );
+        }
+
+        serverTotal += variant.price * item.quantity;
+
+        orderItemsToCreate.push({
+          productId: item.id,
+          quantity: item.quantity,
+          price: variant.price,
+          size: item.size,
+        });
+
+        await tx.productVariant.update({
+          where: { id: variant.id },
+          data: { stock: { decrement: item.quantity } },
+        });
+      }
+
+      const deliveryFee = 10;
+      const finalTotal = serverTotal + deliveryFee;
+
+      const initialStatus = (
+        orderData.paymentMethod === "CARD" ? "AWAITING_PAYMENT" : "PENDING"
+      ) as OrderStatus;
+
+      const newOrder = await tx.order.create({
+        data: {
+          userId,
+          customerName: orderData.customerName,
+          customerEmail: orderData.customerEmail,
+          customerPhone: orderData.customerPhone,
+          address: orderData.address,
+          totalAmount: finalTotal,
+          paymentMethod: orderData.paymentMethod || "COD",
+          status: initialStatus,
+          items: { create: orderItemsToCreate },
+        },
+      });
+
+      await tx.cartItem.deleteMany({ where: { userId } });
+
+      return newOrder;
+    });
+
+    revalidatePath("/orders");
+
+    return { success: true, orderId: result.id };
+  } catch (error: any) {
+    console.error("Order Action Error:", error.message);
+    return { success: false, message: error.message };
+  }
+}
+
+export async function getUserOrders(userId: string) {
+  try {
+    const orders = await prisma.order.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                images: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    const formattedOrders = orders.map((order) => ({
+      id: order.id,
+      date: order.createdAt.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+      status: order.status, // PENDING, DELIVERED, etc.
+      payment: order.paymentMethod,
+      total: order.totalAmount,
+      items: order.items.map((item) => ({
+        id: item.productId,
+        name: item.product.name,
+        image: item.product.images[0] || "",
+        size: item.size,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+    }));
+
+    return { success: true, orders: formattedOrders };
+  } catch (error: any) {
+    console.error("Fetch Orders Error:", error);
+    return { success: false, message: error.message };
+  }
+}
+
+// جلب كل الطلبات للأدمن
+export async function getAllOrders() {
+  try {
+    // التصحيح هنا: نستخدم auth.api.getSession
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session || session.user.role !== "ADMIN") {
+      return { success: false, message: "Unauthorized Access: Admins only." };
+    }
+
+    const orders = await prisma.order.findMany({
+      where: {
+        NOT: {
+          status: "AWAITING_PAYMENT",
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { name: true, email: true } },
+        items: {
+          include: {
+            product: {
+              select: { name: true, images: true },
+            },
+          },
+        },
+      },
+    });
+
+    return { success: true, orders };
+  } catch (error) {
+    console.error("Admin Fetch Error:", error);
+    return { success: false, message: "Failed to fetch orders" };
+  }
+}
+
+export async function updateOrderStatus(
+  orderId: number,
+  newStatus: OrderStatus
+) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session || session.user.role !== "ADMIN") {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    // 1. نجيب الطلب القديم عشان نعرف حالته والمنتجات اللي جواه
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!existingOrder) {
+      return { success: false, message: "Order not found" };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 2. نحدث الحالة للـ Status الجديد
+      await tx.order.update({
+        where: { id: orderId },
+        data: { status: newStatus },
+      });
+
+      // 3. لو الآدمن عمل للطلب CANCELLED (وهو مكنش ملغي قبل كده)
+      // لازم نرجع الكميات (Stock) للمخزن
+      if (newStatus === "CANCELLED" && existingOrder.status !== "CANCELLED") {
+        for (const item of existingOrder.items) {
+          const variant = await tx.productVariant.findFirst({
+            where: { productId: item.productId, volume: item.size },
+          });
+
+          if (variant) {
+            await tx.productVariant.update({
+              where: { id: variant.id },
+              data: { stock: { increment: item.quantity } }, // بنزود الكمية تاني
+            });
+          }
+        }
+      }
+    });
+
+    // نعمل ريفريش للصفحات عشان الداتا تتحدث
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin"); // ضيف مسار الداشبورد بتاعك هنا
+
+    return { success: true };
+  } catch (error) {
+    console.error("Update Status Error:", error);
+    return { success: false, message: "Update failed" };
+  }
+}

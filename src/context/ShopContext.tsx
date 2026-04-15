@@ -1,12 +1,41 @@
-import React, { createContext, useMemo, useState, ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
-// 1. هنا السحر: بنستورد الـ Product interface والبيانات من مكان واحد!
-import { products, Product } from "../assets/assets";
+"use client";
 
-// 2. تعريف شكل سلة المشتريات
+import React, {
+  createContext,
+  useMemo,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
+import { useRouter } from "next/navigation";
+import { getAllProducts } from "../../lib/actions/product.actions";
+import {
+  getUserCart,
+  updateCartInDB,
+  mergeCartAction, // أضفنا دالة الدمج
+} from "../../lib/actions/cart.actions";
+import { authClient } from "../../lib/auth-client";
+import { createOrder, getUserOrders } from "../../lib/actions/order.actions";
+
 export type CartItems = Record<string, Record<string, number>>;
 
-// 3. تعريف شكل عناصر الطلب والطلب نفسه
+// ... Interfaces (نفس اللي عندك بدون تغيير)
+export interface ProductVariant {
+  id: number;
+  volume: string;
+  price: number;
+  stock: number;
+}
+export interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  images: string[];
+  company: string;
+  isFeatured: boolean;
+  variants: ProductVariant[];
+}
 export interface OrderItem {
   id: number;
   name: string;
@@ -15,7 +44,6 @@ export interface OrderItem {
   quantity: number;
   price: number;
 }
-
 export interface Order {
   id: number;
   date: string;
@@ -24,7 +52,6 @@ export interface Order {
   total: number;
   status: string;
 }
-
 interface DeliveryData {
   firstName: string;
   lastName: string;
@@ -37,9 +64,8 @@ interface DeliveryData {
   phone: string;
 }
 
-// 4. تعريف محتوى الـ Context
 export interface ShopContextType {
-  products: Product[]; // بنستخدم الـ Product المستورد
+  products: Product[];
   currency: string;
   delivery_fee: number;
   searchOpen: boolean;
@@ -48,16 +74,21 @@ export interface ShopContextType {
   cartItems: CartItems;
   setCartItems: React.Dispatch<React.SetStateAction<CartItems>>;
   addToCart: (itemId: string | number, size: string) => void;
+  updateQuantity: (
+    itemId: string | number,
+    size: string,
+    quantity: number
+  ) => void;
   getCartCount: number;
   goToCheckout: () => void;
   total: number;
   subtotal: number;
   placeOrder: (
-    items: any,
-    method: string,
-    address: DeliveryData,
-    amount: number
-  ) => void;
+    cartData: any,
+    paymentMethod: string,
+    formData: any,
+    total: number
+  ) => Promise<number | null | void>;
   userOrders: Order[];
   setUserOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   getPriceBySize: (productId: string | number, size: string) => number;
@@ -65,26 +96,82 @@ export interface ShopContextType {
 
 export const ShopContext = createContext<ShopContextType | null>(null);
 
-interface ShopContextProviderProps {
-  children: ReactNode;
-}
-
-const ShopContextProvider: React.FC<ShopContextProviderProps> = ({
+const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
-  const [cartItems, setCartItems] = useState<CartItems>({});
+  const [cartItems, setCartItems] = useState<CartItems>(() => {
+    if (typeof window !== "undefined") {
+      const localData = localStorage.getItem("rose_misk_cart");
+      return localData ? JSON.parse(localData) : {};
+    }
+    return {};
+  });
   const [userOrders, setUserOrders] = useState<Order[]>([]);
 
-  const navigate = useNavigate();
-  const closeSearch = () => setSearchOpen(false);
+  const router = useRouter();
+  const session = authClient.useSession();
+  const userId = session.data?.user.id;
 
-  const goToCheckout = () => {
-    navigate("/placeorder");
+  const currency = "EGP ";
+  const delivery_fee = 10;
+
+  // 1. تحميل المنتجات
+  useEffect(() => {
+    const fetchAll = async () => {
+      const data = await getAllProducts();
+      setProducts(Array.isArray(data) ? data : []);
+    };
+    fetchAll();
+  }, []);
+
+  // 2. تحميل ودمج السلة (المزامنة الذكية)
+  useEffect(() => {
+    const syncCart = async () => {
+      if (userId) {
+        const localData = localStorage.getItem("rose_misk_cart");
+        const localCart = localData ? JSON.parse(localData) : {};
+
+        if (Object.keys(localCart).length > 0) {
+          // ندمج المحلي في السيرفر مرة واحدة فقط عند تسجيل الدخول
+          await mergeCartAction(userId, localCart);
+          localStorage.removeItem("rose_misk_cart");
+
+          // بعد الدمج، هات البيانات النهائية من السيرفر
+          const result = await getUserCart(userId);
+          if (result.success) {
+            setCartItems(result.cartData);
+          }
+        } else {
+          // لو مفيش محلي، هات من السيرفر علطول
+          const result = await getUserCart(userId);
+          if (result.success) {
+            setCartItems(result.cartData);
+          }
+        }
+      }
+    };
+    syncCart();
+  }, [userId]);
+
+  useEffect(() => {
+    // نحفظ في LocalStorage فقط في حالة عدم وجود مستخدم (Guest Session)
+    if (!userId && Object.keys(cartItems).length > 0) {
+      localStorage.setItem("rose_misk_cart", JSON.stringify(cartItems));
+    } else if (Object.keys(cartItems).length === 0) {
+      localStorage.removeItem("rose_misk_cart");
+    }
+  }, [cartItems, userId]);
+
+  const getPriceBySize = (productId: string | number, size: string) => {
+    const product = products.find((p) => String(p.id) === String(productId));
+    const variant = product?.variants.find((v) => v.volume === size);
+    return variant ? variant.price : 0;
   };
 
-  const addToCart = (itemId: string | number, size: string) => {
-    const cartData = structuredClone(cartItems);
+  const addToCart = async (itemId: string | number, size: string) => {
+    let cartData = structuredClone(cartItems);
     const idStr = String(itemId);
 
     if (cartData[idStr]) {
@@ -94,100 +181,123 @@ const ShopContextProvider: React.FC<ShopContextProviderProps> = ({
     }
 
     setCartItems(cartData);
+
+    if (userId) {
+      await updateCartInDB(userId, Number(itemId), size, cartData[idStr][size]);
+    }
   };
 
-  const getCartCount = useMemo(() => {
-    let count = 0;
-    for (const itemId in cartItems) {
-      for (const size in cartItems[itemId]) {
-        count += Number(cartItems[itemId][size]) || 0;
-      }
+  const updateQuantity = async (
+    itemId: string | number,
+    size: string,
+    quantity: number
+  ) => {
+    let cartData = structuredClone(cartItems);
+    const idStr = String(itemId);
+
+    if (quantity <= 0) {
+      if (cartData[idStr]) delete cartData[idStr][size];
+      if (cartData[idStr] && Object.keys(cartData[idStr]).length === 0)
+        delete cartData[idStr];
+    } else {
+      if (!cartData[idStr]) cartData[idStr] = {};
+      cartData[idStr][size] = quantity;
     }
-    return count;
-  }, [cartItems]);
 
-  const currency = "EGP "; // تعديل بسيط لرمز الجنيه ليكون أشيك
-  const delivery_fee = 10;
+    setCartItems(cartData);
 
-  const getPriceBySize = (productId: string | number, size: string) => {
-    // مفيش داعي نعمل Casting (as Product[]) لأن products جاية متعرفة جاهزة
-    const product = products.find((p) => Number(p.id) === Number(productId));
-
-    if (!product) return 0;
-
-    let price = product.price;
-    if (size === "50ML") price *= 1.67;
-    else if (size === "100ML") price *= 3.33;
-
-    return price;
+    if (userId) {
+      await updateCartInDB(userId, Number(itemId), size, quantity);
+    }
   };
 
   const subtotal = useMemo(() => {
     let sum = 0;
     for (const productId in cartItems) {
       for (const size in cartItems[productId]) {
-        const qty = cartItems[productId][size];
-        const price = getPriceBySize(productId, size);
-        sum += price * qty;
+        sum += getPriceBySize(productId, size) * cartItems[productId][size];
       }
     }
     return sum;
-  }, [cartItems]);
+  }, [cartItems, products]);
 
   const total = subtotal + delivery_fee;
 
-  const placeOrder = (cartData: CartItems, selectedPaymentMethod: string) => {
+  const fetchUserOrders = async () => {
+    if (userId) {
+      const result = await getUserOrders(userId);
+      if (result.success && result.orders) {
+        setUserOrders(result.orders);
+      }
+    }
+  };
+  useEffect(() => {
+    fetchUserOrders();
+  }, [userId]);
+
+  const placeOrder = async (
+    cartData: CartItems,
+    paymentMethod: string,
+    formData: DeliveryData,
+    total: number
+  ) => {
+    if (!userId) {
+      alert("Please login to place an order");
+      return router.push("/login");
+    }
+
     const formattedItems = Object.entries(cartData)
       .flatMap(([productId, sizes]) =>
-        Object.entries(sizes).map(([size, quantity]) => {
-          const product = products.find(
-            (p) => Number(p.id) === Number(productId)
-          );
-
-          if (!product) return null;
-
-          return {
-            id: product.id,
-            name: product.name,
-            image: Array.isArray(product.image)
-              ? product.image[0]
-              : product.image,
-            size,
-            quantity: Number(quantity) || 0,
-            price: getPriceBySize(productId, size),
-          } as OrderItem;
-        })
+        Object.entries(sizes).map(([size, quantity]) => ({
+          id: Number(productId),
+          size,
+          quantity: Number(quantity),
+        }))
       )
-      .filter((item): item is OrderItem => item !== null); // Type Guard ممتاز إنت عملته
+      .filter((item) => item.quantity > 0);
 
-    setUserOrders((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        date: new Date().toLocaleDateString(),
-        items: formattedItems,
-        payment: selectedPaymentMethod,
-        total: subtotal + delivery_fee,
-        status: "Pending",
-      },
-    ]);
+    const orderPayload = {
+      customerName: `${formData.firstName} ${formData.lastName}`,
+      customerEmail: formData.email,
+      customerPhone: formData.phone,
+      address: `${formData.street}, ${formData.city}, ${formData.state}, ${formData.zipcode}`,
+      paymentMethod,
+      totalAmount: total,
+    };
 
-    setCartItems({});
-    navigate("/orders");
+    const result = await createOrder(userId, orderPayload, formattedItems);
+
+    if (result.success) {
+      setCartItems({});
+      await fetchUserOrders();
+      localStorage.removeItem("rose_misk_cart");
+      if (paymentMethod === "cod") {
+        router.push("/orders");
+      }
+      return result.orderId;
+    } else {
+      alert("Error: " + result.message);
+    }
   };
 
-  const value: ShopContextType = {
-    products, // هنباصي الـ products مباشرة بدون Casting
+  const value = {
+    products,
     currency,
     delivery_fee,
     searchOpen,
     setSearchOpen,
-    closeSearch,
+    closeSearch: () => setSearchOpen(false),
     cartItems,
     setCartItems,
     addToCart,
-    getCartCount,
-    goToCheckout,
+    updateQuantity,
+    getCartCount: useMemo(() => {
+      let count = 0;
+      for (const id in cartItems)
+        for (const s in cartItems[id]) count += cartItems[id][s];
+      return count;
+    }, [cartItems]),
+    goToCheckout: () => router.push("/placeorder"),
     total,
     subtotal,
     placeOrder,
