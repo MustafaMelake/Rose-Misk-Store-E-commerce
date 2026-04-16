@@ -2,8 +2,7 @@
 
 import React, { useContext, useMemo, useState } from "react";
 import { ShopContext } from "../../context/ShopContext";
-// استيراد دالة Stripe اللي عملناها
-import { createCheckoutSession } from "../../../lib/actions/stripe";
+import { useRouter } from "next/navigation";
 
 interface CartItem {
   id: number;
@@ -28,6 +27,7 @@ interface DeliveryData {
 
 const PlaceOrder: React.FC = () => {
   const context = useContext(ShopContext);
+  const router = useRouter();
 
   if (!context) return null;
 
@@ -104,34 +104,14 @@ const PlaceOrder: React.FC = () => {
 
     setLoading(true);
     try {
-      // 1. حفظ الطلب في قاعدة البيانات أولاً والحصول على رقم الطلب
-      const orderId = await placeOrder(
-        cartItems,
-        paymentMethod,
-        formData,
-        total
-      );
+      const result = await placeOrder(cartItems, "COD", formData, total);
 
-      // 2. التحقق من وسيلة الدفع
-      if (paymentMethod === "stripe" && orderId) {
-        // لو الدفع إلكتروني، هنكلم Stripe
-        const { url } = await createCheckoutSession(
-          orderId.toString(),
-          total,
-          cartData
-        );
-        if (url) {
-          // تحويل العميل لصفحة الدفع الخاصة بـ Stripe
-          window.location.href = url;
-        }
-      } else {
-        // لو الدفع عند الاستلام (COD)، التوجيه هيكون تم من داخل دالة placeOrder في الـ Context
-        console.log("COD Order placed successfully");
-      }
+      router.push("/orders");
+      alert("تم تسجيل طلبك بنجاح!");
     } catch (error) {
       console.error("Order Submission Error:", error);
       alert("حدث خطأ أثناء تنفيذ الطلب، حاول مرة أخرى.");
-      setLoading(false); // بنوقف التحميل هنا بس عشان لو راح Stripe الصفحة هتحمل لوحدها
+      setLoading(false);
     }
   };
 
@@ -273,7 +253,6 @@ const PlaceOrder: React.FC = () => {
           </h3>
 
           <div className="flex flex-col gap-3">
-            {/* خيار الدفع عند الاستلام */}
             <label
               className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
                 paymentMethod === "cod"
@@ -293,29 +272,6 @@ const PlaceOrder: React.FC = () => {
               </div>
               {paymentMethod === "cod" && (
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              )}
-            </label>
-
-            {/* خيار الدفع بالفيزا (Stripe) */}
-            <label
-              className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
-                paymentMethod === "stripe"
-                  ? "border-gold-base bg-gold-base/5"
-                  : "border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === "stripe"}
-                  onChange={() => setPaymentMethod("stripe")}
-                  className="accent-gold-base w-4 h-4"
-                />
-                <span className="font-medium text-sm">Credit / Debit Card</span>
-              </div>
-              {paymentMethod === "stripe" && (
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
               )}
             </label>
           </div>
