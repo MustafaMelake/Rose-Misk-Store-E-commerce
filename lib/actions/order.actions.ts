@@ -1,6 +1,6 @@
 "use server";
 import { prisma } from "../prisma";
-import { OrderStatus } from "../../src/generated/prisma";
+import { OrderStatus } from "@prisma/client";
 import { auth } from "../auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
