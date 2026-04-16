@@ -25,7 +25,7 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
   });
 
   const [images, setImages] = useState<string[]>(
-    initialData?.images?.length ? initialData.images : [""]
+    initialData?.images?.length ? [initialData.images[0]] : [""]
   );
 
   const [variants, setVariants] = useState(
@@ -214,36 +214,21 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
 
           <div className="space-y-3">
             <label className="text-sm font-medium dark:text-zinc-300">
-              Product Images (URLs)
+              Product Image (URL)
             </label>
-            {images.map((url, index) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="text"
-                  value={url}
-                  onChange={(e) => handleImageChange(index, e.target.value)}
-                  className="flex-1 p-2 border dark:border-zinc-800 rounded-md bg-transparent dark:text-white outline-none focus:ring-1 focus:ring-gold-base"
-                />
-                {images.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setImages(images.filter((_, i) => i !== index))
-                    }
-                    className="text-red-500 p-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setImages([...images, ""])}
-              className="text-xs text-gold-base hover:underline"
-            >
-              + Add another image URL
-            </button>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="https://example.com/image.jpg"
+                value={images[0] || ""}
+                onChange={(e) => setImages([e.target.value])}
+                className="flex-1 p-2 border dark:border-zinc-800 rounded-md bg-transparent dark:text-white outline-none focus:ring-1 focus:ring-gold-base"
+              />
+            </div>
+
+            <p className="text-[10px] text-zinc-500">
+              Only one main image is allowed for this product.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-6 pt-4 border-t dark:border-zinc-800">

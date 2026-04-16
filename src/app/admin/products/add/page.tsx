@@ -6,7 +6,6 @@ import { Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { createProduct } from "../../../../../lib/actions/product.actions";
 import { getCategories } from "../../../../../lib/actions/category.actions";
-// تم تعديل الاستيراد هنا ليكون UploadButton
 import { UploadButton } from "../../../../../lib/uploadthing";
 
 export default function AddProductPage() {
@@ -18,7 +17,6 @@ export default function AddProductPage() {
     []
   );
 
-  // الداتا الأساسية للمنتج (تم إضافة categoryId و subcategory)
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -29,7 +27,6 @@ export default function AddProductPage() {
     subcategory: "designer",
   });
 
-  // State الصور (هنعتمد على دي بس للروابط اليدوية أو المرفوعة)
   const [images, setImages] = useState<string[]>([""]);
 
   useEffect(() => {
@@ -42,10 +39,8 @@ export default function AddProductPage() {
     fetchCategories();
   }, []);
 
-  const handleImageChange = (index: number, value: string) => {
-    const newImages = [...images];
-    newImages[index] = value;
-    setImages(newImages);
+  const handleImageChange = (value: string) => {
+    setImages([value]);
   };
 
   const [variants, setVariants] = useState([
@@ -229,63 +224,40 @@ export default function AddProductPage() {
 
           <div className="space-y-4">
             <label className="text-sm font-medium dark:text-zinc-300">
-              Product Images
+              Product Image
             </label>
 
-            {/* عرض الحقول اليدوية (لو حابب تحط رابط مباشر) */}
-            {images.map((url, index) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="text"
-                  value={url}
-                  onChange={(e) => handleImageChange(index, e.target.value)}
-                  placeholder="https://... أو مسار الصورة"
-                  className="flex-1 p-2 border dark:border-zinc-800 rounded-md bg-transparent dark:text-white outline-none focus:ring-1 focus:ring-gold-base"
-                />
+            {/* حقل إدخال يدوي واحد فقط */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={images[0] || ""}
+                onChange={(e) => handleImageChange(e.target.value)}
+                placeholder="https://... أو ارفع الصورة بالأسفل"
+                className="flex-1 p-2 border dark:border-zinc-800 rounded-md bg-transparent dark:text-white outline-none focus:ring-1 focus:ring-gold-base"
+              />
+              {images[0] !== "" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    const newImages = [...images];
-                    // السماح بمسح الحقل فقط إذا كان هناك حقول أخرى أو إذا كان مليئاً
-                    if (images.length > 1) {
-                      newImages.splice(index, 1);
-                      setImages(newImages);
-                    } else {
-                      newImages[index] = "";
-                      setImages(newImages);
-                    }
-                  }}
+                  onClick={() => setImages([""])}
                   className="text-red-500 p-2 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
-              </div>
-            ))}
-
-            <button
-              type="button"
-              onClick={() => setImages([...images, ""])}
-              className="text-sm text-gold-base flex items-center gap-1 font-medium"
-            >
-              <Plus className="w-4 h-4" /> إضافة رابط صورة يدوياً
-            </button>
+              )}
+            </div>
 
             <div className="my-4 border-t border-b dark:border-zinc-800 py-4">
-              <p className="text-sm text-zinc-500 mb-3 text-center">
-                أو قم برفع الصور مباشرة
-              </p>
+              {/* زر الرفع - تم تعديل المنطق هنا ليستبدل الصورة */}
 
-              {/* زر الرفع من UploadThing */}
               <UploadButton
                 endpoint="productImage"
                 onClientUploadComplete={(res) => {
-                  const uploadedUrls = res.map((img) => img.url);
-                  // إضافة الروابط المرفوعة للمصفوفة وإزالة أي حقول فارغة
-                  setImages((prev) => {
-                    const filtered = prev.filter((img) => img !== "");
-                    return [...filtered, ...uploadedUrls];
-                  });
-                  alert("تم رفع الصور بنجاح!");
+                  if (res && res.length > 0) {
+                    // استبدال المصفوفة بالكامل بأول صورة تترفع فقط
+                    setImages([res[0].url]);
+                    alert("تم الرفع بنجاح!");
+                  }
                 }}
                 onUploadError={(error: Error) => {
                   alert(`حدث خطأ أثناء الرفع: ${error.message}`);
@@ -293,19 +265,17 @@ export default function AddProductPage() {
               />
             </div>
 
-            {/* معاينة الصور المرفوعة */}
-            {images.some((img) => img !== "") && (
-              <div className="flex gap-2 flex-wrap">
-                {images
-                  .filter((img) => img !== "")
-                  .map((url, idx) => (
-                    <img
-                      key={idx}
-                      src={url}
-                      alt="معاينة"
-                      className="w-20 h-20 object-cover rounded-md border dark:border-zinc-800"
-                    />
-                  ))}
+            {/* معاينة الصورة المرفوعة */}
+            {images[0] !== "" && (
+              <div className="relative w-32 h-32 mx-auto">
+                <img
+                  src={images[0]}
+                  alt="معاينة"
+                  className="w-full h-full object-cover rounded-md border dark:border-zinc-800"
+                />
+                <div className="absolute -top-2 -right-2 bg-gold-base text-white text-[10px] px-2 py-0.5 rounded-full shadow-lg">
+                  Main Image
+                </div>
               </div>
             )}
           </div>
