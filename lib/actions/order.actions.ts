@@ -1,9 +1,16 @@
 "use server";
 import { prisma } from "../prisma";
-import { OrderStatus } from "@prisma/client";
 import { auth } from "../auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+
+export type OrderStatusType =
+  | "PENDING"
+  | "PAID"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "AWAITING_PAYMENT";
 
 export async function createOrder(
   userId: string,
@@ -46,7 +53,7 @@ export async function createOrder(
 
       const initialStatus = (
         orderData.paymentMethod === "CARD" ? "AWAITING_PAYMENT" : "PENDING"
-      ) as OrderStatus;
+      ) as OrderStatusType;
 
       const newOrder = await tx.order.create({
         data: {
@@ -161,7 +168,7 @@ export async function getAllOrders() {
 
 export async function updateOrderStatus(
   orderId: number,
-  newStatus: OrderStatus
+  newStatus: OrderStatusType
 ) {
   try {
     const session = await auth.api.getSession({

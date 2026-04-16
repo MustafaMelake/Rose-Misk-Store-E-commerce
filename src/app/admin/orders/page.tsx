@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import {
   getAllOrders,
   updateOrderStatus,
+  OrderStatusType,
 } from "../../../../lib/actions/order.actions";
 import { OrderStatus } from "@prisma/client";
 
@@ -28,7 +29,7 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = async (
     orderId: number,
-    newStatus: OrderStatus
+    newStatus: OrderStatusType
   ) => {
     setUpdatingId(orderId);
 
