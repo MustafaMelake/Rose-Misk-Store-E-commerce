@@ -128,10 +128,8 @@ export async function getUserOrders(userId: string) {
   }
 }
 
-// جلب كل الطلبات للأدمن
 export async function getAllOrders() {
   try {
-    // التصحيح هنا: نستخدم auth.api.getSession
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -141,11 +139,7 @@ export async function getAllOrders() {
     }
 
     const orders = await prisma.order.findMany({
-      where: {
-        NOT: {
-          status: "AWAITING_PAYMENT",
-        },
-      },
+      // ⬅️ تم إزالة فلتر الـ NOT عشان يجيب كل الطلبات
       orderBy: { createdAt: "desc" },
       include: {
         user: { select: { name: true, email: true } },
