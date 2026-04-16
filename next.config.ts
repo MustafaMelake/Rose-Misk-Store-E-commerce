@@ -1,16 +1,16 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname: "utfs.io",
-        port: "",
-        pathname: "/f/**",
+      },
+      {
+        protocol: "https",
+        hostname: "fkcqwx31dk.ufs.sh",
       },
     ],
   },
 };
-
-export default nextConfig;
