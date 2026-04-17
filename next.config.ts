@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig = {
+const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
@@ -9,8 +9,10 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "fkcqwx31dk.ufs.sh",
+        hostname: "fkcqwx31dk.ufs.sh", // الدومين الخاص بمشروعك
       },
     ],
   },
 };
+
+export default nextConfig;
