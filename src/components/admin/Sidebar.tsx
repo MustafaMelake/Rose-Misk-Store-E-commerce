@@ -23,14 +23,6 @@ export default function Sidebar() {
   return (
     <aside className="w-64 bg-white dark:bg-zinc-950 border-r dark:border-zinc-800 h-screen sticky top-0 flex flex-col hidden md:flex">
       {/* Admin Logo */}
-      <div className="h-20 flex items-center px-6 border-b dark:border-zinc-800">
-        <span className="text-xl font-bold text-gold-base prata-regular tracking-widest uppercase">
-          Rose Misk
-        </span>
-        <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded">
-          ADMIN
-        </span>
-      </div>
 
       {/* Navigation Links */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
