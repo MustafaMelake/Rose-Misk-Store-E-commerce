@@ -20,7 +20,7 @@ const Fragrances: React.FC = () => {
 
   // --- States الخاصة بالـ Pagination ---
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 9;
+  const itemsPerPage = 8;
 
   useEffect(() => {
     const fetchCats = async () => {
@@ -101,7 +101,7 @@ const Fragrances: React.FC = () => {
   `;
 
   return (
-    <div className="flex flex-col sm:flex-row gap-1 sm:gap-12 pt-10 border-t dark:text-white px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
+    <div className="flex flex-col sm:flex-row gap-1 sm:gap-12 pt-10 border-t dark:text-white px-4 sm:px-[5vw] md:px-[3vw] lg:px-[4vw]">
       {/* FILTER SIDEBAR */}
       <div className="min-w-60">
         <p
