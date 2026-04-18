@@ -19,7 +19,6 @@ model Product {
   reviewsCount Int      @default(0)
   isFeatured   Boolean  @default(false)
 
-  // الأقسام
   categoryId  Int?
   category    Category? @relation(fields: [categoryId], references: [id])
   subcategory String?
@@ -67,7 +66,7 @@ model OrderItem {
   id        Int     @id @default(autoincrement())
   quantity  Int
   price     Float
-  size      String // <--- ضيف السطر ده ضروري جداً
+  size      String
   orderId   Int
   order     Order   @relation(fields: [orderId], references: [id])
   productId Int
@@ -92,7 +91,6 @@ model CartItem {
   size      String
   quantity  Int     @default(1)
 
-  // السطر ده مهم جداً: بيمنع تكرار نفس المنتج بنفس الحجم لنفس المستخدم
   @@unique([userId, productId, size])
 }
 
@@ -141,7 +139,7 @@ model Account {
   accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
   scope                 String?
-  password              String?   @db.Text // Better auth stores hashed passwords here
+  password              String?   @db.Text
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }

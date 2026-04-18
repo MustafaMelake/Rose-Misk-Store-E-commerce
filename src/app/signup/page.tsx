@@ -28,7 +28,7 @@ const SignUp = () => {
       setError(signUpError.message || "Failed to create account");
       setLoading(false);
     } else {
-      router.push("/login?message=Account created successfully");
+      router.push("/");
     }
   };
 

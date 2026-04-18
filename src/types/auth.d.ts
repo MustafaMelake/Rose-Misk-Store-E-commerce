@@ -2,7 +2,7 @@ import "better-auth";
 
 declare module "better-auth" {
   interface User {
-    role: "ADMIN" | "USER"; // أو string لو مش عايز تقيدها
+    role: "ADMIN" | "USER";
   }
   interface Session {
     user: User;

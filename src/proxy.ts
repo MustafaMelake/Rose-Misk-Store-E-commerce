@@ -11,12 +11,10 @@ export default async function proxy(request: NextRequest) {
   const isProtectedPage =
     path.startsWith("/checkout") || path.startsWith("/profile") || isAdminPage;
 
-  // 1. حماية الصفحات المحمية (Login Check)
   if (!sessionToken && isProtectedPage) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // 2. لو مسجل دخول وبيحاول يروح لصفحة Auth
   if (sessionToken && isAuthPage) {
     return NextResponse.redirect(new URL("/", request.url));
   }
@@ -32,15 +30,12 @@ export default async function proxy(request: NextRequest) {
           },
         }
       );
-
-      // تأكد أن الرد سليم قبل محاولة تحويله لـ JSON
       if (response.ok) {
         const session = await response.json();
         if (!session || session.user.role !== "ADMIN") {
           return NextResponse.redirect(new URL("/", request.url));
         }
       } else {
-        // لو الـ API ردت بـ Error، نرجعه للـ login للأمان
         return NextResponse.redirect(new URL("/login", request.url));
       }
     } catch (error) {
