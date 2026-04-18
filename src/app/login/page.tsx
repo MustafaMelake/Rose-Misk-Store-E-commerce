@@ -36,7 +36,7 @@ const Login = () => {
   const handleSocialLogin = async (provider: "google" | "facebook") => {
     await authClient.signIn.social({
       provider: provider,
-      callbackURL: "/", // Where to redirect after success
+      callbackURL: "/",
     });
   };
 

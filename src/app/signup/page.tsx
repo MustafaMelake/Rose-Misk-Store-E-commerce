@@ -63,7 +63,7 @@ const SignUp = () => {
               <input
                 required
                 type="text"
-                placeholder="Mustafa Melake"
+                placeholder="Name"
                 className="w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 focus:border-gold-base outline-none dark:text-gray-200"
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
