@@ -12,14 +12,12 @@ import { getAllProducts } from "../../lib/actions/product.actions";
 import {
   getUserCart,
   updateCartInDB,
-  mergeCartAction, // أضفنا دالة الدمج
+  mergeCartAction,
 } from "../../lib/actions/cart.actions";
 import { authClient } from "../../lib/auth-client";
 import { createOrder, getUserOrders } from "../../lib/actions/order.actions";
 
 export type CartItems = Record<string, Record<string, number>>;
-
-// ... Interfaces (نفس اللي عندك بدون تغيير)
 export interface ProductVariant {
   id: number;
   volume: string;
@@ -101,6 +99,7 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
+  // Lazy intialize
   const [cartItems, setCartItems] = useState<CartItems>(() => {
     if (typeof window !== "undefined") {
       const localData = localStorage.getItem("rose_misk_cart");
@@ -115,7 +114,7 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
   const userId = session.data?.user.id;
 
   const currency = "EGP ";
-  const delivery_fee = 10;
+  const delivery_fee = 80;
 
   // 1. تحميل المنتجات
   useEffect(() => {
@@ -134,17 +133,14 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
         const localCart = localData ? JSON.parse(localData) : {};
 
         if (Object.keys(localCart).length > 0) {
-          // ندمج المحلي في السيرفر مرة واحدة فقط عند تسجيل الدخول
           await mergeCartAction(userId, localCart);
           localStorage.removeItem("rose_misk_cart");
 
-          // بعد الدمج، هات البيانات النهائية من السيرفر
           const result = await getUserCart(userId);
           if (result.success) {
             setCartItems(result.cartData);
           }
         } else {
-          // لو مفيش محلي، هات من السيرفر علطول
           const result = await getUserCart(userId);
           if (result.success) {
             setCartItems(result.cartData);
@@ -156,7 +152,6 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
   }, [userId]);
 
   useEffect(() => {
-    // نحفظ في LocalStorage فقط في حالة عدم وجود مستخدم (Guest Session)
     if (!userId && Object.keys(cartItems).length > 0) {
       localStorage.setItem("rose_misk_cart", JSON.stringify(cartItems));
     } else if (Object.keys(cartItems).length === 0) {

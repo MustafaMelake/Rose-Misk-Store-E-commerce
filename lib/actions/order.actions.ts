@@ -48,7 +48,7 @@ export async function createOrder(
         });
       }
 
-      const deliveryFee = 10;
+      const deliveryFee = 80;
       const finalTotal = serverTotal + deliveryFee;
 
       const initialStatus = (
@@ -139,7 +139,6 @@ export async function getAllOrders() {
     }
 
     const orders = await prisma.order.findMany({
-      // ⬅️ تم إزالة فلتر الـ NOT عشان يجيب كل الطلبات
       orderBy: { createdAt: "desc" },
       include: {
         user: { select: { name: true, email: true } },
@@ -173,7 +172,6 @@ export async function updateOrderStatus(
       return { success: false, message: "Unauthorized" };
     }
 
-    // 1. نجيب الطلب القديم عشان نعرف حالته والمنتجات اللي جواه
     const existingOrder = await prisma.order.findUnique({
       where: { id: orderId },
       include: { items: true },
@@ -184,7 +182,6 @@ export async function updateOrderStatus(
     }
 
     await prisma.$transaction(async (tx) => {
-      // 2. نحدث الحالة للـ Status الجديد
       await tx.order.update({
         where: { id: orderId },
         data: { status: newStatus },
@@ -201,7 +198,7 @@ export async function updateOrderStatus(
           if (variant) {
             await tx.productVariant.update({
               where: { id: variant.id },
-              data: { stock: { increment: item.quantity } }, // بنزود الكمية تاني
+              data: { stock: { increment: item.quantity } },
             });
           }
         }

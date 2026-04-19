@@ -57,7 +57,6 @@ export async function clearUserCart(userId: string) {
   }
 }
 
-// lib/actions/cart.actions.ts
 export async function mergeCartAction(userId: string, localCart: CartItems) {
   try {
     for (const productId in localCart) {

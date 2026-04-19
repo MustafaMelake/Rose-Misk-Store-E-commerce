@@ -21,7 +21,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-white dark:bg-zinc-950 border-r dark:border-zinc-800 h-screen sticky top-0 flex flex-col hidden md:flex">
+    <aside className="w-64 bg-white dark:bg-zinc-950 border-r dark:border-zinc-800 sticky top-[70px] h-[calc(100vh-70px)] flex flex-col hidden md:flex">
       {/* Admin Logo */}
 
       {/* Navigation Links */}

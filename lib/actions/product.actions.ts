@@ -1,4 +1,3 @@
-// src/lib/actions/product.actions.ts
 "use server";
 
 import { prisma } from "../prisma";
@@ -27,10 +26,10 @@ export async function createProduct(data: {
   name: string;
   description: string;
   company: string;
-  images: string[]; // مصفوفة الصور
-  rating: number; // التقييم
-  isFeatured: boolean; // Best Seller
-  categoryId?: number; // <--- ضيف السطر ده
+  images: string[];
+  rating: number;
+  isFeatured: boolean;
+  categoryId?: number;
   subcategory?: string;
   slug: string;
   variants: { volume: string; price: number; stock: number }[];
@@ -39,7 +38,7 @@ export async function createProduct(data: {
     const generatedSlug =
       data.name
         .toLowerCase()
-        .replace(/[^a-z0-9\u0600-\u06FF]+/g, "-") // يدعم العربي والإنجليزي
+        .replace(/[^a-z0-9\u0600-\u06FF]+/g, "-")
         .replace(/^-+|-+$/g, "") +
       "-" +
       Date.now();
@@ -51,9 +50,9 @@ export async function createProduct(data: {
         images: data.images,
         rating: Number(data.rating),
         isFeatured: data.isFeatured,
-        subcategory: data.subcategory, // تأكد إن الـ CategoryId واصل كـ Number
+        subcategory: data.subcategory,
         categoryId: data.categoryId ? Number(data.categoryId) : undefined,
-        slug: generatedSlug, // استخدم المتغير اللي ولدناه هنا
+        slug: generatedSlug,
         variants: {
           create: data.variants.map((v: any) => ({
             volume: v.volume,
@@ -74,7 +73,6 @@ export async function createProduct(data: {
 
 export async function deleteProduct(productId: number) {
   try {
-    // حذف المنتج (سيقوم Prisma بحذف الـ Variants تلقائياً لو كنت مفعل Cascade Delete)
     await prisma.product.delete({
       where: { id: productId },
     });
@@ -99,19 +97,13 @@ export async function getProductById(id: string) {
   }
 }
 
-// 2. دالة التحديث
-// src/lib/actions/product.actions.ts
-
 export async function updateProduct(id: number, data: any) {
   try {
-    // تأكد إن الـ id وصل فعلاً رقم مش NaN
     if (isNaN(id)) throw new Error("Invalid Product ID");
 
     const updatedProduct = await prisma.$transaction(async (tx) => {
-      // 1. حذف الـ Variants القديمة
       await tx.productVariant.deleteMany({ where: { productId: id } });
 
-      // 2. تحديث المنتج
       return await tx.product.update({
         where: { id: id },
         data: {
@@ -122,7 +114,6 @@ export async function updateProduct(id: number, data: any) {
           rating: Number(data.rating) || 0,
           isFeatured: Boolean(data.isFeatured),
           subcategory: data.subcategory,
-          // التعديل هنا لضمان الربط بالقسم صح
           categoryId: data.categoryId ? Number(data.categoryId) : undefined,
           variants: {
             create: data.variants.map((v: any) => ({
@@ -138,7 +129,6 @@ export async function updateProduct(id: number, data: any) {
     revalidatePath("/admin/products");
     return { success: true, data: updatedProduct };
   } catch (error: any) {
-    // السطر ده هو اللي هيقولك المشكلة فين بالظبط في الـ Terminal
     console.error("CRITICAL DATABASE ERROR:", error.message || error);
     return {
       success: false,
