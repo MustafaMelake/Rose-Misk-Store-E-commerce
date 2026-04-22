@@ -19,7 +19,6 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 3. حماية مسارات الأدمن (Role Check)
   if (sessionToken && isAdminPage) {
     try {
       const response = await fetch(
