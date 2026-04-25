@@ -8,17 +8,14 @@ import { ShopContext } from "../context/ShopContext";
 const BestSeller = () => {
   const context = useContext(ShopContext);
 
-  // لو الـ Context مش موجود نخرج بدري
   if (!context) return null;
 
   const { products } = context;
 
-  // فلترة المنتجات عشان نجيب الـ Best Sellers بس
   const bestSellers = useMemo(() => {
     return products.filter((item) => item.isFeatured).slice(0, 5);
   }, [products]);
 
-  // لو مفيش منتجات مميزة لسه، ممكن نخفي القسم خالص
   if (bestSellers.length === 0) return null;
 
   return (
@@ -31,10 +28,8 @@ const BestSeller = () => {
         </p>
       </div>
 
-      {/* عرض المنتجات */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 gap-y-6">
         {bestSellers.map((item) => {
-          // حساب أقل سعر من الـ variants
           const minPrice =
             item.variants.length > 0
               ? Math.min(...item.variants.map((v) => v.price))

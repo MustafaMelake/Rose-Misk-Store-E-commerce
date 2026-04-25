@@ -167,12 +167,19 @@ export async function getLatestProducts() {
   }
 }
 
-export async function getAllProducts() {
+// تعديل دالة getAllProducts لتدعم التقسيم (Pagination)
+export async function getAllProducts(page: number = 1, limit: number = 12) {
   try {
+    const skip = (page - 1) * limit;
+
     const products = await prisma.product.findMany({
+      skip: skip,
+      take: limit,
       include: {
         variants: true,
-        category: true,
+        category: {
+          select: { id: true, name: true },
+        },
       },
       orderBy: {
         createdAt: "desc",
