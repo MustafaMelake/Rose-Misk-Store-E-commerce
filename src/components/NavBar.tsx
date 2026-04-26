@@ -18,14 +18,17 @@ import {
 import { ShopContext } from "../context/ShopContext";
 import { ThemeContext } from "./ThemeContext";
 import { authClient } from "../../lib/auth-client";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion"; 
 
 const NavBar: React.FC = () => {
   const [isOpen, SetIsOpen] = useState<boolean>(false);
   const [open, setOpen] = useState<boolean>(false);
+  
+  const [hidden, setHidden] = useState<boolean>(false); 
+
   const pathname = usePathname();
   const router = useRouter();
 
-  // جلب بيانات الجلسة (Session)
   const { data: session } = authClient.useSession();
   const isAdmin = (session?.user as { role?: string })?.role === "ADMIN";
 
@@ -34,6 +37,21 @@ const NavBar: React.FC = () => {
 
   const userRef = useRef<HTMLDivElement>(null);
   const sideRef = useRef<HTMLDivElement>(null);
+
+
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious();
+    
+    if (previous !== undefined) {
+      if (latest > previous && latest > 100) {
+        setHidden(true); 
+      } else {
+        setHidden(false); 
+      }
+    }
+  });
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -99,7 +117,15 @@ const NavBar: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-between py-5 font-medium sticky top-0 z-50 bg-white dark:bg-black px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] border-b border-slate-100 dark:border-zinc-900">
+    <motion.div
+      variants={{
+        visible: { y: 0 },
+        hidden: { y: "-100%" },
+      }}
+      animate={hidden ? "hidden" : "visible"}
+      transition={{ duration: 0.35, ease: "easeInOut" }}
+      className="flex items-center justify-between py-5 font-medium sticky top-0 z-50 bg-white dark:bg-black px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] border-b border-slate-100 dark:border-zinc-900"
+    >
       <Link href="/">
         <span className="text-2xl sm:text-3xl text-gold-base prata-regular uppercase tracking-widest">
           ROSE MISK
@@ -147,7 +173,6 @@ const NavBar: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* التبديل الذكي حسب الـ Role */}
                     {isAdmin ? (
                       <Link
                         href="/admin"
@@ -246,7 +271,6 @@ const NavBar: React.FC = () => {
               onClick={() => SetIsOpen(false)}
             />
 
-            {/* روابط إضافية للموبايل */}
             <hr className="border-zinc-100 dark:border-zinc-800" />
             {isAdmin ? (
               <Link
@@ -268,7 +292,7 @@ const NavBar: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
