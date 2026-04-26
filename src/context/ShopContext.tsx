@@ -125,7 +125,6 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
     fetchAll();
   }, []);
 
-  // 2. تحميل ودمج السلة (المزامنة الذكية)
   useEffect(() => {
     const syncCart = async () => {
       if (userId) {

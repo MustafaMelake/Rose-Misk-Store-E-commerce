@@ -1,5 +1,6 @@
 import React from "react";
 import { Phone, Facebook, Instagram } from "lucide-react";
+import Link from "next/link";
 
 const Footer = () => {
   return (
@@ -10,10 +11,7 @@ const Footer = () => {
             ROSE MISK
           </span>
           <p className="w-full md:w-2/3 text-gray-400 dark:text-white">
-            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Quibusdam
-            consectetur architecto quae ex veritatis? Ratione, dolores? Aut
-            veritatis sed nam asperiores iusto fugiat, ipsa accusamus, voluptate
-            esse minus optio laudantium.
+            Luxury scents for an unforgettable presence.
           </p>
         </div>
 
@@ -60,8 +58,13 @@ const Footer = () => {
       <div>
         <hr className="text-gray-200" />
         <p className="py-5 text-center text-sm dark:text-gold-light-20">
-          All Copy Right are reserverd from Rose Misk | Website is made by
-          Mustafa Melake
+          All Copy Right are reserverd from Rose Misk | Website is made
+          <Link
+            target="blank"
+            href={"https://mustafamelake-portfolio.vercel.app/"}
+          >
+            by Mustafa Melake
+          </Link>
         </p>
       </div>
     </>
