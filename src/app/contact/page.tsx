@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
 import { assets } from "../../assets/assets";
 import Footer from "@/components/Footer";
+import { motion } from "framer-motion";
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -25,11 +26,22 @@ const Contact: React.FC = () => {
     setFormData({ name: "", email: "", message: "" });
   };
 
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return (
     <>
-      <div className="py-16 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] animate-fadeIn">
+      <div className="py-16 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] overflow-hidden">
         {/* HEADER */}
-        <div className="text-center max-w-2xl mx-auto mb-14">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center max-w-2xl mx-auto mb-14"
+        >
           <h1 className="text-3xl font-semibold mb-4 prata-regular text-gold-base tracking-wide">
             Contact Us
           </h1>
@@ -37,11 +49,16 @@ const Contact: React.FC = () => {
             We're here to help. Reach out to us anytime and we’ll happily answer
             your questions.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid md:grid-cols-2 gap-12">
-          {/* CONTACT FORM */}
-          <div className="bg-white dark:bg-zinc-900 shadow-xl rounded-2xl p-8 border border-gray-100 dark:border-zinc-800">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="bg-white dark:bg-zinc-900 shadow-xl rounded-2xl p-8 border border-gray-100 dark:border-zinc-800"
+          >
             <h2 className="text-xl font-semibold mb-6 dark:text-white flex items-center gap-2">
               Send us a message
             </h2>
@@ -76,53 +93,72 @@ const Contact: React.FC = () => {
                 className="w-full p-3 h-32 resize-none rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 focus:border-gold-base focus:ring-1 focus:ring-gold-base outline-none transition-all dark:text-gray-200"
               ></textarea>
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 type="submit"
-                className="py-3 mt-2 bg-black dark:bg-gold-base text-white dark:text-black rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gold-base hover:text-black dark:hover:bg-gold-light-20 transition-all duration-300"
+                className="py-3 mt-2 bg-black dark:bg-gold-base text-white dark:text-black rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gold-base hover:text-black dark:hover:bg-gold-light-20 transition-all duration-300 shadow-lg"
               >
                 <Send size={18} />
                 Send Message
-              </button>
+              </motion.button>
             </form>
-          </div>
+          </motion.div>
 
-          {/* CONTACT INFO */}
-          <div className="flex flex-col justify-between space-y-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={{
+              visible: {
+                transition: { staggerChildren: 0.2, delayChildren: 0.4 },
+              },
+            }}
+            className="flex flex-col justify-between space-y-8"
+          >
             <div className="space-y-8">
               <ContactInfoItem
                 icon={<Phone size={20} />}
                 title="Phone"
                 detail="+20 0111 684 5684"
+                variants={itemVariants}
               />
               <ContactInfoItem
                 icon={<Mail size={20} />}
                 title="Email"
                 detail="rosemisk@gmail.com"
+                variants={itemVariants}
               />
               <ContactInfoItem
                 icon={<MapPin size={20} />}
                 title="Location"
                 detail="Cairo, Egypt"
+                variants={itemVariants}
               />
             </div>
 
             {/* MAP IMAGE */}
-            <div className="group relative rounded-2xl overflow-hidden shadow-lg h-60 border border-gray-200 dark:border-zinc-800">
+            <motion.div
+              variants={itemVariants}
+              className="group relative rounded-2xl overflow-hidden shadow-lg h-60 border border-gray-200 dark:border-zinc-800"
+            >
               <a
-                href="https://www.google.com/maps"
+                href="https://maps.google.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full h-full"
               >
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors z-10" />
-                <img
+                <motion.img
                   src={assets.Location}
                   alt="Rose Misk Office Location"
-                  className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                  className="w-full h-full object-cover"
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ duration: 0.7 }}
                 />
               </a>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
       <Footer />
@@ -130,23 +166,31 @@ const Contact: React.FC = () => {
   );
 };
 
-// مكون فرعي صغير لتنظيم المعلومات
 interface InfoItemProps {
   icon: React.ReactNode;
   title: string;
   detail: string;
+  variants: any;
 }
 
-const ContactInfoItem: React.FC<InfoItemProps> = ({ icon, title, detail }) => (
-  <div className="flex items-start gap-4 group">
-    <div className="w-12 h-12 rounded-full bg-black dark:bg-gold-base text-white dark:text-black flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+const ContactInfoItem: React.FC<InfoItemProps> = ({
+  icon,
+  title,
+  detail,
+  variants,
+}) => (
+  <motion.div variants={variants} className="flex items-start gap-4 group">
+    <motion.div
+      whileHover={{ rotate: 15, scale: 1.1 }}
+      className="w-12 h-12 rounded-full bg-black dark:bg-gold-base text-white dark:text-black flex items-center justify-center shrink-0 transition-colors shadow-md"
+    >
       {icon}
-    </div>
+    </motion.div>
     <div>
       <h3 className="text-lg font-semibold dark:text-gold-base">{title}</h3>
       <p className="text-gray-600 dark:text-gray-300">{detail}</p>
     </div>
-  </div>
+  </motion.div>
 );
 
 export default Contact;
