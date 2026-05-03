@@ -8,6 +8,9 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@custom-variant hover (&:hover);
+@custom-variant group-hover (.group:hover &);
+
 a.active hr {
   display: block;
 }
