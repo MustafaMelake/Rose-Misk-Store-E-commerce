@@ -13,6 +13,9 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
+  // 1. حالة الفلتر الحالية (الافتراضي: الكل)
+  const [filterStatus, setFilterStatus] = useState<OrderStatus | "ALL">("ALL");
+
   useEffect(() => {
     const fetchOrders = async () => {
       const response = await getAllOrders();
@@ -48,6 +51,22 @@ export default function AdminOrdersPage() {
     setUpdatingId(null);
   };
 
+  // 2. تصفية الطلبات بناءً على الفلتر المختار
+  const filteredOrders = orders.filter((order) => {
+    if (filterStatus === "ALL") return true;
+    return order.status === filterStatus;
+  });
+
+  // 3. خيارات الفلترة المتاحة
+  const filterOptions: (OrderStatus | "ALL")[] = [
+    "ALL",
+    "PENDING",
+    "PAID",
+    "SHIPPED",
+    "DELIVERED",
+    "CANCELLED",
+  ];
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black transition-colors duration-300">
@@ -62,20 +81,39 @@ export default function AdminOrdersPage() {
     <div className="min-h-screen bg-white dark:bg-black transition-colors duration-300 flex-1 space-y-1 p-1 pt-1 font-sans">
       <div className="max-w-[1400px] mx-auto">
         {/* Header Section */}
-        <div className="mb-16 border-b border-neutral-200 dark:border-neutral-800 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="mb-8 border-b border-neutral-200 dark:border-neutral-800 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white prata-regular tracking-wide">
               Orders
               <span className="text-neutral-400 dark:text-neutral-600">.</span>
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400 mt-3 text-lg font-medium">
-              إدارة الطلبات والعمليات ( {orders.length} طلب )
+              إدارة الطلبات والعمليات ( {filteredOrders.length} طلب معروض من أصل{" "}
+              {orders.length} )
             </p>
           </div>
         </div>
 
+        {/* ---------------- FILTER BAR ---------------- */}
+        <div className="mb-8 flex flex-wrap gap-2">
+          {filterOptions.map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-lg border transition-all duration-300 ${
+                filterStatus === status
+                  ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-md"
+                  : "bg-transparent text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 hover:text-black dark:hover:text-white"
+              }`}
+            >
+              {status.replace("_", " ")}
+            </button>
+          ))}
+        </div>
+        {/* -------------------------------------------- */}
+
         {/* High-End Table */}
-        <div className="w-full overflow-x-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#050505]">
+        <div className="w-full overflow-x-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#050505] shadow-sm">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-neutral-50 dark:bg-[#0a0a0a] border-b border-neutral-200 dark:border-neutral-800">
@@ -97,17 +135,17 @@ export default function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
-              {orders.length === 0 ? (
+              {filteredOrders.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
                     className="py-16 text-center text-neutral-400 dark:text-neutral-600 font-medium tracking-wide"
                   >
-                    لا توجد طلبات حتى الآن.
+                    لا توجد طلبات تطابق هذا التصنيف.
                   </td>
                 </tr>
               ) : (
-                orders.map((order) => (
+                filteredOrders.map((order) => (
                   <tr
                     key={order.id}
                     className="hover:bg-neutral-50 dark:hover:bg-[#0a0a0a] transition-colors duration-200 group"
@@ -206,12 +244,15 @@ export default function AdminOrdersPage() {
                           }`}
                         >
                           <option value="PENDING">PENDING</option>
+                          {/* تم إضافة حالة AWAITING_PAYMENT هنا أيضاً لتطابق الـ Schema */}
+                          <option value="AWAITING_PAYMENT">
+                            AWAITING PAYMENT
+                          </option>
                           <option value="PAID">PAID</option>
                           <option value="SHIPPED">SHIPPED</option>
                           <option value="DELIVERED">DELIVERED</option>
                           <option value="CANCELLED">CANCELLED</option>
                         </select>
-                        {/* Custom minimal dropdown arrow */}
                         <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                           <svg
                             className="w-3 h-3 text-neutral-400"
