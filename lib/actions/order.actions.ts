@@ -13,7 +13,7 @@ export type OrderStatusType =
   | "AWAITING_PAYMENT";
 
 export async function createOrder(
-  userId: string,
+  userId: string | null,
   orderData: any,
   items: { id: number; size: string; quantity: number }[]
 ) {
@@ -55,21 +55,28 @@ export async function createOrder(
         orderData.paymentMethod === "CARD" ? "AWAITING_PAYMENT" : "PENDING"
       ) as OrderStatusType;
 
+      const orderCreationData: any = {
+        customerName: orderData.customerName,
+        customerEmail: orderData.customerEmail,
+        customerPhone: orderData.customerPhone,
+        address: orderData.address,
+        totalAmount: finalTotal,
+        paymentMethod: orderData.paymentMethod || "COD",
+        status: initialStatus,
+        items: { create: orderItemsToCreate },
+      };
+
+      if (userId) {
+        orderCreationData.userId = userId;
+      }
+
       const newOrder = await tx.order.create({
-        data: {
-          userId,
-          customerName: orderData.customerName,
-          customerEmail: orderData.customerEmail,
-          customerPhone: orderData.customerPhone,
-          address: orderData.address,
-          totalAmount: finalTotal,
-          paymentMethod: orderData.paymentMethod || "COD",
-          status: initialStatus,
-          items: { create: orderItemsToCreate },
-        },
+        data: orderCreationData,
       });
 
-      await tx.cartItem.deleteMany({ where: { userId } });
+      if (userId) {
+        await tx.cartItem.deleteMany({ where: { userId } });
+      }
 
       return newOrder;
     });
