@@ -101,6 +101,18 @@ export async function updateProduct(id: number, data: any) {
   try {
     if (isNaN(id)) throw new Error("Invalid Product ID");
 
+    let parsedCategoryId: number | null | undefined = undefined;
+
+    if (data.categoryId) {
+      const num = Number(data.categoryId);
+      if (isNaN(num)) {
+        throw new Error("Invalid Category ID format");
+      }
+      parsedCategoryId = num;
+    } else if (data.categoryId === null || data.categoryId === "") {
+      parsedCategoryId = null;
+    }
+
     const updatedProduct = await prisma.$transaction(async (tx) => {
       await tx.productVariant.deleteMany({ where: { productId: id } });
 
@@ -114,7 +126,7 @@ export async function updateProduct(id: number, data: any) {
           rating: Number(data.rating) || 0,
           isFeatured: Boolean(data.isFeatured),
           subcategory: data.subcategory,
-          categoryId: data.categoryId ? Number(data.categoryId) : undefined,
+          categoryId: parsedCategoryId,
           variants: {
             create: data.variants.map((v: any) => ({
               volume: v.volume,
@@ -132,7 +144,7 @@ export async function updateProduct(id: number, data: any) {
     console.error("CRITICAL DATABASE ERROR:", error.message || error);
     return {
       success: false,
-      error: "حدث خطأ أثناء الحفظ، راجع بيانات القسم (Category)",
+      error: error.message || "حدث خطأ غير معروف أثناء التحديث.",
     };
   }
 }
