@@ -9,7 +9,6 @@ const Title: React.FC<TitleProps> = ({ text1, text2 }) => {
       <p className="text-gold-light-20">
         {text1} <span className="font-medium text-gold-base">{text2}</span>
       </p>
-      <p className="w-8 sm:w-12 h-[1px] sm:h-[2px] bg-gold-base"></p>
     </div>
   );
 };
