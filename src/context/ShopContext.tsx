@@ -132,29 +132,28 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
         const localCart = localData ? JSON.parse(localData) : {};
 
         if (Object.keys(localCart).length > 0) {
-          await mergeCartAction(userId, localCart);
           localStorage.removeItem("rose_misk_cart");
-
-          const result = await getUserCart(userId);
-          if (result.success) {
-            setCartItems(result.cartData);
-          }
-        } else {
-          const result = await getUserCart(userId);
-          if (result.success) {
-            setCartItems(result.cartData);
-          }
+          await mergeCartAction(userId, localCart);
         }
+
+        const result = await getUserCart(userId);
+        if (result.success) {
+          setCartItems(result.cartData);
+        }
+      } else {
+        setCartItems({});
       }
     };
     syncCart();
   }, [userId]);
 
   useEffect(() => {
-    if (!userId && Object.keys(cartItems).length > 0) {
-      localStorage.setItem("rose_misk_cart", JSON.stringify(cartItems));
-    } else if (Object.keys(cartItems).length === 0) {
-      localStorage.removeItem("rose_misk_cart");
+    if (!userId) {
+      if (Object.keys(cartItems).length > 0) {
+        localStorage.setItem("rose_misk_cart", JSON.stringify(cartItems));
+      } else {
+        localStorage.removeItem("rose_misk_cart");
+      }
     }
   }, [cartItems, userId]);
 
