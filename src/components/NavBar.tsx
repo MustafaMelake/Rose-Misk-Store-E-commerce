@@ -18,13 +18,15 @@ import {
 import { ShopContext } from "../context/ShopContext";
 import { ThemeContext } from "./ThemeContext";
 import { authClient } from "../../lib/auth-client";
-import { motion, useScroll, useMotionValueEvent } from "framer-motion"; 
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 
 const NavBar: React.FC = () => {
   const [isOpen, SetIsOpen] = useState<boolean>(false);
   const [open, setOpen] = useState<boolean>(false);
-  
-  const [hidden, setHidden] = useState<boolean>(false); 
+
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+
+  const [hidden, setHidden] = useState<boolean>(false);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -38,20 +40,23 @@ const NavBar: React.FC = () => {
   const userRef = useRef<HTMLDivElement>(null);
   const sideRef = useRef<HTMLDivElement>(null);
 
-
   const { scrollY } = useScroll();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious();
-    
+
     if (previous !== undefined) {
       if (latest > previous && latest > 100) {
-        setHidden(true); 
+        setHidden(true);
       } else {
-        setHidden(false); 
+        setHidden(false);
       }
     }
   });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -216,7 +221,7 @@ const NavBar: React.FC = () => {
         <Link href="/cart" className="relative group">
           <ShoppingBag className="w-5 dark:text-white group-hover:text-gold-base transition-colors" />
           <p className="text-white dark:text-black rounded-full absolute right-[-5px] bottom-[-5px] w-4 h-4 text-[8px] flex items-center justify-center bg-black dark:bg-white border border-white dark:border-black">
-            {getCartCount}
+            {isMounted ? getCartCount : 0}
           </p>
         </Link>
 
