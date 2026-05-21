@@ -1,6 +1,4 @@
 import "./global.css";
-import NavBar from "../components/NavBar";
-import SearchBar from "../components/SearchBar";
 import ShopContextProvider from "../context/ShopContext";
 import { ThemeProvider } from "../components/ThemeContext";
 import { Metadata } from "next";
@@ -25,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Rose Misk | Luxury Fragrances",
     description: "أرقى أنواع المسك والعطور الفاخرة في متجر واحد.",
-    url: "https://rose-misk.vercel.app", // حط رابط الفيرسل بتاعك هنا
+    url: "https://rose-misk.vercel.app",
     siteName: "Rose Misk",
   },
 };
@@ -40,11 +38,7 @@ export default function RootLayout({
       <body className="antialiased bg-white dark:bg-black">
         <ThemeProvider>
           <ShopContextProvider>
-            <div className="px-4 sm:px-[5vw] md:px-[7vw] lg:px-[7vw] min-h-screen">
-              <NavBar />
-              <SearchBar />
-              {children}
-            </div>
+            <div>{children}</div>
           </ShopContextProvider>
         </ThemeProvider>
       </body>
