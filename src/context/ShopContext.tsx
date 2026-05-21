@@ -82,11 +82,11 @@ export interface ShopContextType {
   total: number;
   subtotal: number;
   placeOrder: (
-    cartData: any,
+    cartData: CartItems,
     paymentMethod: string,
-    formData: any,
+    formData: DeliveryData,
     total: number
-  ) => Promise<number | null | void>;
+  ) => Promise<{ success: boolean; orderId?: number; message?: string }>;
   userOrders: Order[];
   setUserOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   getPriceBySize: (productId: string | number, size: string) => number;
@@ -234,11 +234,6 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
     formData: DeliveryData,
     total: number
   ) => {
-    if (!userId) {
-      alert("Please login to place an order");
-      return router.push("/login");
-    }
-
     const formattedItems = Object.entries(cartData)
       .flatMap(([productId, sizes]) =>
         Object.entries(sizes).map(([size, quantity]) => ({
@@ -258,18 +253,25 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
       totalAmount: total,
     };
 
-    const result = await createOrder(userId, orderPayload, formattedItems);
+    const result = await createOrder(
+      userId || null,
+      orderPayload,
+      formattedItems
+    );
 
     if (result.success) {
       setCartItems({});
-      await fetchUserOrders();
-      localStorage.removeItem("rose_misk_cart");
-      if (paymentMethod === "cod") {
-        router.push("/orders");
+      if (userId) {
+        await fetchUserOrders();
       }
-      return result.orderId;
+      localStorage.removeItem("rose_misk_cart");
+
+      return { success: true, orderId: result.orderId };
     } else {
-      alert("Error: " + result.message);
+      return {
+        success: false,
+        message: result.message || "Failed to create order",
+      };
     }
   };
 

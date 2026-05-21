@@ -3,6 +3,7 @@
 import React, { useContext, useMemo, useState } from "react";
 import { ShopContext } from "../../context/ShopContext";
 import { useRouter } from "next/navigation";
+import { authClient } from "../../../lib/auth-client";
 
 interface CartItem {
   id: number;
@@ -28,6 +29,7 @@ interface DeliveryData {
 const PlaceOrder: React.FC = () => {
   const context = useContext(ShopContext);
   const router = useRouter();
+  const { data: session } = authClient.useSession();
 
   if (!context) return null;
 
@@ -41,7 +43,7 @@ const PlaceOrder: React.FC = () => {
   } = context;
 
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<string>("cod");
+  const [paymentMethod, setPaymentMethod] = useState<string>("COD");
 
   /** ---------------- DELIVERY FORM STATE ---------------- **/
   const [formData, setFormData] = useState<DeliveryData>({
@@ -104,17 +106,31 @@ const PlaceOrder: React.FC = () => {
 
     setLoading(true);
     try {
-      const result = await placeOrder(cartItems, "COD", formData, total);
+      const result = await placeOrder(
+        cartItems,
+        paymentMethod,
+        formData,
+        total
+      );
 
-      router.push("/orders");
-      alert("تم تسجيل طلبك بنجاح!");
+      if (result && result.success) {
+        alert("تم تسجيل طلبك بنجاح!");
+
+        if (session?.user) {
+          router.push("/orders");
+        } else {
+          router.push("/");
+        }
+      } else {
+        alert(result?.message || "حدث خطأ أثناء تنفيذ الطلب، حاول مرة أخرى.");
+      }
     } catch (error) {
       console.error("Order Submission Error:", error);
       alert("حدث خطأ أثناء تنفيذ الطلب، حاول مرة أخرى.");
+    } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="py-10 px-4 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-black dark:text-white animate-fadeIn">
       {/* ---------------- LEFT SIDE: DELIVERY FORM ---------------- */}
