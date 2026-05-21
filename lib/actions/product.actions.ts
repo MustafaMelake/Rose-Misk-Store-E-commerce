@@ -64,6 +64,7 @@ export async function createProduct(data: {
     });
 
     revalidatePath("/admin/products");
+    revalidatePath("/", "layout");
     return { success: true, data: newProduct };
   } catch (error) {
     console.error("PRISMA ERROR:", error);
@@ -78,6 +79,7 @@ export async function deleteProduct(productId: number) {
     });
 
     revalidatePath("/admin/products");
+    revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
     console.error("Delete Error:", error);
@@ -87,13 +89,22 @@ export async function deleteProduct(productId: number) {
 
 export async function getProductById(id: string) {
   try {
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return { success: false, error: "Invalid Product ID" };
+    }
+
     const product = await prisma.product.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: parsedId },
       include: { variants: true },
     });
+
+    if (!product) return { success: false, error: "Product not found" };
+
     return { success: true, data: product };
   } catch (error) {
-    return { success: false, error: "Product not found" };
+    console.error("Get Product Error:", error);
+    return { success: false, error: "Database error occurred" };
   }
 }
 
@@ -139,6 +150,7 @@ export async function updateProduct(id: number, data: any) {
     });
 
     revalidatePath("/admin/products");
+    revalidatePath("/", "layout");
     return { success: true, data: updatedProduct };
   } catch (error: any) {
     console.error("CRITICAL DATABASE ERROR:", error.message || error);
@@ -179,29 +191,36 @@ export async function getLatestProducts() {
   }
 }
 
-// تعديل دالة getAllProducts لتدعم التقسيم (Pagination)
 export async function getAllProducts(page: number = 1, limit: number = 12) {
   try {
     const skip = (page - 1) * limit;
 
-    const products = await prisma.product.findMany({
-      skip: skip,
-      take: limit,
-      include: {
-        variants: true,
-        category: {
-          select: { id: true, name: true },
+    const [products, totalCount] = await prisma.$transaction([
+      prisma.product.findMany({
+        skip: skip,
+        take: limit,
+        include: {
+          variants: true,
+          category: {
+            select: { id: true, name: true },
+          },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      prisma.product.count(),
+    ]);
 
-    return products;
+    return {
+      products,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+    };
   } catch (error) {
     console.error("Error fetching all products:", error);
-    return [];
+    return { products: [], totalCount: 0, totalPages: 0, currentPage: page };
   }
 }
 

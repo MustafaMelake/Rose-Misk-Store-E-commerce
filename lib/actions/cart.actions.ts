@@ -83,6 +83,7 @@ export async function mergeCartAction(userId: string, localCart: CartItems) {
     }
     return { success: true };
   } catch (error) {
+    console.error("MERGE CART ERROR:", error);
     return { success: false };
   }
 }
