@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
-import { assets } from "../../assets/assets";
+import { assets } from "../../../assets/assets";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 

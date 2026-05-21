@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { authClient } from "../../../lib/auth-client"; 
+import { authClient } from "../../../../lib/auth-client";
 import Footer from "@/components/Footer";
 
 const SignUp = () => {

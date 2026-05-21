@@ -3,9 +3,9 @@
 import React, { useContext, useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { ShopContext } from "../../../context/ShopContext";
-import ProductItem from "../../../components/ProductItem";
-import { renderStars } from "../../../components/Stars";
+import { ShopContext } from "../../../../context/ShopContext";
+import ProductItem from "../../../../components/ProductItem";
+import { renderStars } from "../../../../components/Stars";
 import Footer from "@/components/Footer";
 
 interface ProductType {

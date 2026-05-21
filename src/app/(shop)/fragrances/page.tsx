@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { ShopContext } from "../../context/ShopContext";
+import { ShopContext } from "../../../context/ShopContext";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react"; // ضفت أيقونات للـ Pagination
-import Title from "../../components/Title";
-import ProductItem from "../../components/ProductItem";
-import { getCategories } from "../../../lib/actions/category.actions";
+import Title from "../../../components/Title";
+import ProductItem from "../../../components/ProductItem";
+import { getCategories } from "../../../../lib/actions/category.actions";
 
 const Fragrances: React.FC = () => {
   const context = useContext(ShopContext);

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { assets } from "../../assets/assets";
+import { assets } from "../../../assets/assets";
 import Image from "next/image";
 import Footer from "@/components/Footer";
 import { motion, Variants } from "framer-motion";

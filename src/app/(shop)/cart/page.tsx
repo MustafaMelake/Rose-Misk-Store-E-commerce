@@ -2,10 +2,10 @@
 
 import React, { useContext, useEffect, useState } from "react";
 import Image from "next/image";
-import { ShopContext } from "../../context/ShopContext";
+import { ShopContext } from "../../../context/ShopContext";
 import { Trash2, Minus, Plus, ShoppingBag } from "lucide-react";
-import Title from "../../components/Title";
-import CheckOut from "../../components/CheckOut";
+import Title from "../../../components/Title";
+import CheckOut from "../../../components/CheckOut";
 import Footer from "@/components/Footer";
 
 interface CartDisplayItem {

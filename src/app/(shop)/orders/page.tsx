@@ -1,8 +1,8 @@
 "use client";
 import React, { useContext } from "react";
 import Image from "next/image";
-import { ShopContext } from "../../context/ShopContext";
-import Title from "../../components/Title";
+import { ShopContext } from "../../../context/ShopContext";
+import Title from "../../../components/Title";
 import Footer from "@/components/Footer";
 
 // تحسين الـ Interfaces لتطابق بيانات الداتابيز الحقيقية
