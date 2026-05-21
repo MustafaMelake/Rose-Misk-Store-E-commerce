@@ -99,14 +99,10 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
-  // Lazy intialize
-  const [cartItems, setCartItems] = useState<CartItems>(() => {
-    if (typeof window !== "undefined") {
-      const localData = localStorage.getItem("rose_misk_cart");
-      return localData ? JSON.parse(localData) : {};
-    }
-    return {};
-  });
+
+  const [cartItems, setCartItems] = useState<CartItems>({});
+  const [isCartLoaded, setIsCartLoaded] = useState(false);
+
   const [userOrders, setUserOrders] = useState<Order[]>([]);
 
   const router = useRouter();
@@ -120,42 +116,45 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     const fetchAll = async () => {
       const data = await getAllProducts();
-      setProducts(Array.isArray(data) ? data : []);
+      setProducts(
+        data?.products && Array.isArray(data.products) ? data.products : []
+      );
     };
     fetchAll();
   }, []);
 
   useEffect(() => {
-    const syncCart = async () => {
-      if (userId) {
-        const localData = localStorage.getItem("rose_misk_cart");
-        const localCart = localData ? JSON.parse(localData) : {};
+    const initializeCart = async () => {
+      const localData = localStorage.getItem("rose_misk_cart");
+      const localCart = localData ? JSON.parse(localData) : {};
 
+      if (userId) {
         if (Object.keys(localCart).length > 0) {
           localStorage.removeItem("rose_misk_cart");
           await mergeCartAction(userId, localCart);
         }
-
         const result = await getUserCart(userId);
         if (result.success) {
           setCartItems(result.cartData);
         }
       } else {
-        setCartItems({});
+        setCartItems(localCart);
       }
+      setIsCartLoaded(true);
     };
-    syncCart();
+
+    initializeCart();
   }, [userId]);
 
   useEffect(() => {
-    if (!userId) {
+    if (!userId && isCartLoaded) {
       if (Object.keys(cartItems).length > 0) {
         localStorage.setItem("rose_misk_cart", JSON.stringify(cartItems));
       } else {
         localStorage.removeItem("rose_misk_cart");
       }
     }
-  }, [cartItems, userId]);
+  }, [cartItems, userId, isCartLoaded]);
 
   const getPriceBySize = (productId: string | number, size: string) => {
     const product = products.find((p) => String(p.id) === String(productId));
