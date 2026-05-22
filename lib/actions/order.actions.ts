@@ -3,9 +3,6 @@ import { prisma } from "../prisma";
 import { auth } from "../auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export type OrderStatusType =
   | "PENDING"
