@@ -36,10 +36,19 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  const isGuest = !session?.user;
+  let isGuest = true; // نفترض أنه زائر كإجراء احتياطي
+
+  try {
+    // محاولة جلب الجلسة بشكل آمن
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    // إذا كان هناك مستخدم، إذن هو ليس زائراً
+    isGuest = !session?.user;
+  } catch (error) {
+    // في حالة وجود خطأ في متغيرات Vercel أو الداتا بيز، سيتم طباعة الخطأ هنا ولن ينهار الموقع
+    console.error("Session fetch error:", error);
+  }
   return (
     <html lang="en" dir="ltr">
       <body className="antialiased bg-white dark:bg-black">
