@@ -84,48 +84,6 @@ export async function createOrder(
       return newOrder;
     });
 
-    // if (result && result.customerEmail) {
-    //   resend.emails.send({
-    //     from: "Rose Misk <onboarding@resend.dev>", // استبدله بدومينك المدفوع لاحقاً عند الربط
-    //     to: [result.customerEmail],
-    //     subject: `تأكيد طلبك من متجر روز مسك لعطور #${result.id}`,
-    //     html: `
-    //       <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-    //         <div style="background-color: #111827; padding: 30px; text-align: center; border-bottom: 3px solid #d4af37;">
-    //           <h1 style="color: #ffffff; margin: 0; font-size: 28px; letter-spacing: 2px;">رُوز مِسك</h1>
-    //           <p style="color: #9ca3af; margin: 5px 0 0 0; font-size: 14px;">عطور فاخرة تليق بحضورك</p>
-    //         </div>
-
-    //         <div style="padding: 30px; background-color: #ffffff; color: #1f2937;">
-    //           <h2 style="color: #111827; margin-top: 0;">شكراً لثقتك بنا، يا ${result.customerName} ✨</h2>
-    //           <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">
-    //             يسعدنا إبلاغك بأننا قمنا باستلام طلبك بنجاح، وجاري الآن تجهيزه لكي يصلك في أسرع وقت.
-    //           </p>
-
-    //           <div style="background-color: #f9fafb; border: 1px solid #f3f4f6; border-radius: 12px; padding: 20px; margin: 25px 0;">
-    //             <h3 style="margin-top: 0; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;"> تفاصيل الطلب:</h3>
-    //             <p style="margin: 8px 0;"><strong>رقم الطلب:</strong> <span style="color: #d4af37; font-weight: bold;">#${result.id}</span></p>
-    //             <p style="margin: 8px 0;"><strong>طريقة الدفع:</strong> ${result.paymentMethod === "CARD" ? "بطاقة ائتمانية" : "الدفع عند الاستلام"}</p>
-    //             <p style="margin: 8px 0;"><strong>إجمالي المبلغ:</strong> ${result.totalAmount} جنيه مصري (شامل الشحن)</p>
-    //             <p style="margin: 8px 0;"><strong>العنوان المشحون إليه:</strong> ${result.address}</p>
-    //           </div>
-
-    //           <p style="font-size: 14px; color: #9ca3af; text-align: center; margin-top: 30px;">
-    //             إذا كان لديك أي استفسار، يمكنك الرد على هذا الإيميل مباشرة أو التواصل مع خدمة العملاء.
-    //           </p>
-    //         </div>
-
-    //         <div style="background-color: #f3f4f6; padding: 15px; text-align: center; border-top: 1px solid #e5e7eb;">
-    //           <p style="margin: 0; font-size: 12px; color: #9ca3af;">&copy; 2026 Rose Misk Store. جميع الحقوق محفوظة.</p>
-    //         </div>
-    //       </div>
-    //     `,
-    //   }).catch((emailError) => {
-    //     // لو حصل مشكلة في السيرفر بتاع الإيميل نطبعها في الكونسول بس مباكش الأوردر نفسه
-    //     console.error("Failed to send order email:", emailError.message);
-    //   });
-    // }
-
     revalidatePath("/orders");
 
     return { success: true, orderId: result.id };
