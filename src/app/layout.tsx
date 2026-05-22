@@ -2,9 +2,6 @@ import "./global.css";
 import ShopContextProvider from "../context/ShopContext";
 import { ThemeProvider } from "../components/ThemeContext";
 import { Metadata } from "next";
-import { auth } from "../../lib/auth";
-import GuestWelcomeBanner from "@/components/GuestWelcomeBanner";
-import { headers } from "next/headers";
 
 export const metadata: Metadata = {
   title: {
@@ -40,10 +37,7 @@ export default async function RootLayout({
     <html lang="en" dir="ltr">
       <body className="antialiased bg-white dark:bg-black">
         <ThemeProvider>
-          <ShopContextProvider>
-            {children}
-            <GuestWelcomeBanner />
-          </ShopContextProvider>
+          <ShopContextProvider>{children}</ShopContextProvider>
         </ThemeProvider>
       </body>
     </html>
