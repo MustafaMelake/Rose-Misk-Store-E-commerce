@@ -2,6 +2,7 @@ import "./global.css";
 import ShopContextProvider from "../context/ShopContext";
 import { ThemeProvider } from "../components/ThemeContext";
 import { Metadata } from "next";
+import GuestWelcomeBanner from "@/components/GuestWelcomeBanner";
 
 export const metadata: Metadata = {
   title: {
@@ -37,7 +38,10 @@ export default function RootLayout({
     <html lang="en" dir="ltr">
       <body className="antialiased bg-white dark:bg-black">
         <ThemeProvider>
-          <ShopContextProvider>{children}</ShopContextProvider>
+          <ShopContextProvider>
+            {children}
+            <GuestWelcomeBanner />
+          </ShopContextProvider>
         </ThemeProvider>
       </body>
     </html>
