@@ -194,8 +194,7 @@ export async function getLatestProducts() {
 export async function getAllProducts(page: number = 1, limit: number = 12) {
   try {
     const skip = (page - 1) * limit;
-
-    const [products, totalCount] = await prisma.$transaction([
+    const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         skip: skip,
         take: limit,

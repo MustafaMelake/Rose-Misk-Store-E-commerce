@@ -3,6 +3,8 @@ import ShopContextProvider from "../context/ShopContext";
 import { ThemeProvider } from "../components/ThemeContext";
 import { Metadata } from "next";
 import GuestWelcomeBanner from "@/components/GuestWelcomeBanner";
+import { auth } from "../../lib/auth";
+import { headers } from "next/headers";
 
 export const metadata: Metadata = {
   title: {
@@ -29,18 +31,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const isGuest = !session?.user;
+
   return (
     <html lang="en" dir="ltr">
       <body className="antialiased bg-white dark:bg-black">
         <ThemeProvider>
           <ShopContextProvider>
             {children}
-            <GuestWelcomeBanner />
+            {isGuest && <GuestWelcomeBanner />}
           </ShopContextProvider>
         </ThemeProvider>
       </body>
