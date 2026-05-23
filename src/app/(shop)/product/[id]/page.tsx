@@ -9,6 +9,7 @@ import { renderStars } from "../../../../components/Stars";
 import Footer from "@/components/Footer";
 import { authClient } from "../../../../../lib/auth-client";
 import ReviewModal from "@/components/ReviewModal";
+import ProductReviews from "@/components/ProductReviews";
 
 interface ProductType {
   id: number;
@@ -149,15 +150,6 @@ const Product: React.FC = () => {
                   Log in to write a review
                 </span>
               )}
-              {currentUserId && (
-                <ReviewModal
-                  productId={productItem.id}
-                  userId={currentUserId}
-                  productName={productItem.name}
-                  isOpen={isReviewModalOpen}
-                  onClose={() => setIsReviewModalOpen(false)}
-                />
-              )}{" "}
             </div>
 
             <div className="h-[1px] bg-gray-100 dark:bg-zinc-800 w-full mb-6"></div>
@@ -228,6 +220,8 @@ const Product: React.FC = () => {
           </div>
         </div>
 
+        <ProductReviews productId={productItem.id} />
+
         {/* Recommended Section */}
         {relatedProducts.length > 0 && (
           <div className="mt-32">
@@ -254,13 +248,15 @@ const Product: React.FC = () => {
         )}
       </div>
 
-      <ReviewModal
-        productId={productItem.id}
-        userId={currentUserId}
-        productName={productItem.name}
-        isOpen={isReviewModalOpen}
-        onClose={() => setIsReviewModalOpen(false)}
-      />
+      {currentUserId && (
+        <ReviewModal
+          productId={productItem.id}
+          userId={currentUserId}
+          productName={productItem.name}
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+        />
+      )}
 
       <Footer />
     </>

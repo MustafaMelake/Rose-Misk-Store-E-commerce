@@ -115,3 +115,24 @@ export async function getPendingReviews() {
     return [];
   }
 }
+
+export async function getApprovedProductReviews(productId: number) {
+  try {
+    const reviews = await prisma.review.findMany({
+      where: {
+        productId: productId,
+        status: "APPROVED",
+      },
+      include: {
+        user: {
+          select: { name: true, image: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return { success: true, reviews };
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    return { success: false, error: "Failed to fetch reviews", reviews: [] };
+  }
+}
