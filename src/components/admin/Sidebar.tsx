@@ -22,7 +22,7 @@ export default function Sidebar() {
     {
       name: "Reviews",
       href: "/admin/reviews",
-      icons: Users,
+      icon: Users,
     },
   ];
 
