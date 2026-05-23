@@ -51,7 +51,7 @@ export async function approveReview(reviewId: string, productId: number) {
     await prisma.$transaction(async (tx) => {
       await tx.review.update({
         where: { id: reviewId },
-        data: { status: "Approved" },
+        data: { status: "APPROVED" },
       });
 
       const approvedReviews = await tx.review.findMany({

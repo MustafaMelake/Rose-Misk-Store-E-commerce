@@ -67,7 +67,7 @@ export default function AdminReviewList({
             <div className="flex items-center gap-3">
               {renderStars(review.rating)}
               <span className="text-xs text-gray-400">
-                by {review.user.name}
+                by {review.user?.name || "Unknown User"}
               </span>
             </div>
             <p className="text-gray-700 dark:text-zinc-300 text-sm leading-relaxed">

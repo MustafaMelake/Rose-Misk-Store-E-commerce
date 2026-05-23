@@ -1,6 +1,5 @@
 import { getPendingReviews } from "../../../../lib/actions/review.actions";
-import AdminReviewList from "../../../components/admin/AdminReviewList";
-
+import AdminReviewList from "@/components/admin/AdminReviewList";
 export default async function AdminReviewsPage() {
   const pendingReviews = await getPendingReviews();
 

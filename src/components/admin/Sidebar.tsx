@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   Users,
   ArrowLeft,
+  icons,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -21,6 +22,7 @@ export default function Sidebar() {
     {
       name: "Reviews",
       href: "/admin/reviews",
+      icons: Users,
     },
   ];
 

@@ -7,8 +7,7 @@ import { ShopContext } from "../../../../context/ShopContext";
 import ProductItem from "../../../../components/ProductItem";
 import { renderStars } from "../../../../components/Stars";
 import Footer from "@/components/Footer";
-
-// 🌟 1. استدعاء كومبوننت المودال (تأكد من مسار الملف عندك)
+import { authClient } from "../../../../../lib/auth-client";
 import ReviewModal from "@/components/ReviewModal";
 
 interface ProductType {
@@ -38,13 +37,10 @@ const Product: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [added, setAdded] = useState<boolean>(false);
 
-  // 🌟 2. إضافة State للتحكم في المودال
   const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
 
-  // 💡 تنبيه: هنا هتحتاج تجيب الـ userId بتاع العميل اللي مسجل دخول
-  // (سواء بتستخدم Clerk, NextAuth, أو Custom Context)
-  // مؤقتاً هنحط قيمة وهمية عشان الكود يشتغل
-  const currentUserId = "user_12345";
+  const { data: session } = authClient.useSession();
+  const currentUserId = session?.user?.id;
 
   const handleAdd = () => {
     if (!selectedSize) {
@@ -72,7 +68,7 @@ const Product: React.FC = () => {
           images: item.images || [],
           company: item.company || "Rose Misk",
           rating: (item as any).rating || 0,
-          reviews: (item as any).reviewsCount || 0, // خليتها reviewsCount عشان تتوافق مع الداتا بيز
+          reviews: (item as any).reviewsCount || 0,
           size: item.variants ? item.variants.map((v: any) => v.volume) : [],
         });
         setSelectedSize(null);
@@ -138,17 +134,30 @@ const Product: React.FC = () => {
                   </span>
                 </span>
               </div>
-
               <span className="hidden sm:inline text-gray-300 dark:text-zinc-700">
                 •
               </span>
-
-              <button
-                onClick={() => setIsReviewModalOpen(true)}
-                className="text-sm font-medium text-black dark:text-white underline underline-offset-4 decoration-gray-300 dark:decoration-zinc-700 hover:decoration-gold-base hover:text-gold-base dark:hover:text-gold-base transition-all cursor-pointer"
-              >
-                Write a Review
-              </button>
+              {currentUserId ? (
+                <button
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="text-sm font-medium text-black dark:text-white underline underline-offset-4 decoration-gray-300 dark:decoration-zinc-700 hover:decoration-gold-base transition-all cursor-pointer"
+                >
+                  Write a Review
+                </button>
+              ) : (
+                <span className="text-sm text-gray-400">
+                  Log in to write a review
+                </span>
+              )}
+              {currentUserId && (
+                <ReviewModal
+                  productId={productItem.id}
+                  userId={currentUserId}
+                  productName={productItem.name}
+                  isOpen={isReviewModalOpen}
+                  onClose={() => setIsReviewModalOpen(false)}
+                />
+              )}{" "}
             </div>
 
             <div className="h-[1px] bg-gray-100 dark:bg-zinc-800 w-full mb-6"></div>
@@ -245,10 +254,9 @@ const Product: React.FC = () => {
         )}
       </div>
 
-      {/* 🌟 4. إضافة المودال في نهاية الصفحة (خارج الـ Flow بتاع التصميم عشان الـ Fixed Position) */}
       <ReviewModal
         productId={productItem.id}
-        userId={currentUserId} // الـ ID المؤقت اللي هتبدله ببيانات اليوزر الحقيقي
+        userId={currentUserId}
         productName={productItem.name}
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
