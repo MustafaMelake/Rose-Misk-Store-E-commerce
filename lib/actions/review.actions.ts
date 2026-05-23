@@ -98,3 +98,20 @@ export async function declineReview(reviewId: string) {
     return { success: false, error: "Failed to decline review." };
   }
 }
+
+export async function getPendingReviews() {
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { status: "PENDING" },
+      include: {
+        product: { select: { name: true, images: true } },
+        user: { select: { name: true, email: true, image: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return reviews;
+  } catch (error) {
+    console.error("Error fetching pending reviews:", error);
+    return [];
+  }
+}

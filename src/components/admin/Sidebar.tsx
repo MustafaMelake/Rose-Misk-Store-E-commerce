@@ -18,6 +18,10 @@ export default function Sidebar() {
     { name: "Products", href: "/admin/products", icon: Package },
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { name: "Users", href: "/admin/users", icon: Users },
+    {
+      name: "Reviews",
+      href: "/admin/reviews",
+    },
   ];
 
   return (
