@@ -8,6 +8,9 @@ import ProductItem from "../../../../components/ProductItem";
 import { renderStars } from "../../../../components/Stars";
 import Footer from "@/components/Footer";
 
+// 🌟 1. استدعاء كومبوننت المودال (تأكد من مسار الملف عندك)
+import ReviewModal from "@/components/ReviewModal";
+
 interface ProductType {
   id: number;
   name: string;
@@ -22,9 +25,11 @@ interface ProductType {
   category?: string;
   Subcategory?: string;
 }
+
 const Product: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const context = useContext(ShopContext);
+
   if (!context) return null;
 
   const { products, currency, addToCart, getPriceBySize } = context;
@@ -32,6 +37,14 @@ const Product: React.FC = () => {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
   const [added, setAdded] = useState<boolean>(false);
+
+  // 🌟 2. إضافة State للتحكم في المودال
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
+
+  // 💡 تنبيه: هنا هتحتاج تجيب الـ userId بتاع العميل اللي مسجل دخول
+  // (سواء بتستخدم Clerk, NextAuth, أو Custom Context)
+  // مؤقتاً هنحط قيمة وهمية عشان الكود يشتغل
+  const currentUserId = "user_12345";
 
   const handleAdd = () => {
     if (!selectedSize) {
@@ -51,16 +64,15 @@ const Product: React.FC = () => {
     if (Array.isArray(products) && products.length > 0) {
       const item = products.find((p) => Number(p.id) === Number(id));
       if (item) {
-        // 1. استخراج السعر من أول Variant عشان الـ Interface
         const defaultPrice = item.variants?.[0]?.price || 0;
 
         setProductItem({
           ...item,
-          price: defaultPrice, // إضافة السعر هنا حلت مشكلة Error 2345
-          images: item.images || [], // Prisma بترجع images مصفوفة
+          price: defaultPrice,
+          images: item.images || [],
           company: item.company || "Rose Misk",
-          rating: (item as any).rating || 0, // استخدام as any مؤقتاً لو مش موجودة في تعريف Prisma
-          reviews: (item as any).reviews || 0,
+          rating: (item as any).rating || 0,
+          reviews: (item as any).reviewsCount || 0, // خليتها reviewsCount عشان تتوافق مع الداتا بيز
           size: item.variants ? item.variants.map((v: any) => v.volume) : [],
         });
         setSelectedSize(null);
@@ -115,13 +127,28 @@ const Product: React.FC = () => {
               {productItem.name}
             </h1>
 
-            <div className="flex items-center gap-4 mb-6">
-              {renderStars(productItem.rating)}
-              <span className="text-gray-400 text-sm">
-                {productItem.rating.toFixed(1)}
-                {/*{productItem.reviews} Verified
-              Reviews*/}
+            {/* 🌟 3. تعديل منطقة التقييم لإضافة زرار "Write a Review" */}
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="flex items-center gap-2">
+                {renderStars(productItem.rating)}
+                <span className="text-gray-600 dark:text-zinc-400 font-medium text-sm">
+                  {productItem.rating.toFixed(1)}
+                  <span className="ml-1 opacity-70">
+                    ({productItem.reviews})
+                  </span>
+                </span>
+              </div>
+
+              <span className="hidden sm:inline text-gray-300 dark:text-zinc-700">
+                •
               </span>
+
+              <button
+                onClick={() => setIsReviewModalOpen(true)}
+                className="text-sm font-medium text-black dark:text-white underline underline-offset-4 decoration-gray-300 dark:decoration-zinc-700 hover:decoration-gold-base hover:text-gold-base dark:hover:text-gold-base transition-all cursor-pointer"
+              >
+                Write a Review
+              </button>
             </div>
 
             <div className="h-[1px] bg-gray-100 dark:bg-zinc-800 w-full mb-6"></div>
@@ -165,7 +192,7 @@ const Product: React.FC = () => {
                       setSelectedSize(s);
                       setError("");
                     }}
-                    className={`min-w-[80px] py-3 px-4 rounded-xl border-2 transition-all duration-300 font-medium ${
+                    className={`min-w-[80px] py-3 px-4 rounded-xl border-2 transition-all duration-300 font-medium cursor-pointer ${
                       selectedSize === s
                         ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black shadow-lg"
                         : "border-gray-100 dark:border-zinc-800 hover:border-gold-base dark:text-zinc-400"
@@ -181,7 +208,7 @@ const Product: React.FC = () => {
             <button
               onClick={handleAdd}
               disabled={added}
-              className={`w-full py-5 rounded-2xl text-lg font-bold tracking-widest transition-all duration-500 shadow-2xl ${
+              className={`w-full py-5 rounded-2xl text-lg font-bold tracking-widest transition-all duration-500 shadow-2xl cursor-pointer ${
                 added
                   ? "bg-gold-dark-20 text-white translate-y-[-2px]"
                   : "bg-black dark:bg-gold-base text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-gold-light-20"
@@ -217,6 +244,16 @@ const Product: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 🌟 4. إضافة المودال في نهاية الصفحة (خارج الـ Flow بتاع التصميم عشان الـ Fixed Position) */}
+      <ReviewModal
+        productId={productItem.id}
+        userId={currentUserId} // الـ ID المؤقت اللي هتبدله ببيانات اليوزر الحقيقي
+        productName={productItem.name}
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+      />
+
       <Footer />
     </>
   );

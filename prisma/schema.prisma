@@ -28,8 +28,28 @@ model Product {
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
   cartItems  CartItem[]
+  reviews    Review[]
 
   @@index([slug])
+}
+
+model Review {
+  id      String @id @default(cuid())
+  rating  Int
+  comment String @db.Text
+
+  status    String   @default("PENDING")
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
 }
 
 model ProductVariant {
@@ -111,6 +131,7 @@ model User {
   orders   Order[]
 
   cartItems CartItem[]
+  reviews   Review[]
 }
 
 model Session {
