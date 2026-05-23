@@ -51,6 +51,7 @@ const Hero: React.FC = () => {
       >
         <Image
           src={assets.HeroIMG}
+          loading="eager"
           alt="Rose Misk | Exquisite Naxos-Inspired Fragrances Promotional Banner"
           fill
           priority

@@ -46,8 +46,10 @@ export default async function RootLayout({
       <body className="antialiased bg-white dark:bg-black">
         <ThemeProvider>
           <ShopContextProvider>
-            {children}
-            {isGuest && <GuestWelcomeBanner />}
+            <main>
+              {children}
+              {isGuest && <GuestWelcomeBanner />}
+            </main>
           </ShopContextProvider>
         </ThemeProvider>
       </body>
