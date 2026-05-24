@@ -1,8 +1,7 @@
-"use client"; // أضف هذا السطر إذا كنت تستخدم Next.js 13+ (App Router)
+"use client"; 
 
 import React from "react";
 import Link from "next/link";
-import { assets } from "../assets/assets";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
@@ -50,7 +49,9 @@ const Hero: React.FC = () => {
         className="relative aspect-[2/1] w-full sm:w-1/2 overflow-hidden"
       >
         <Image
-          src={assets.HeroIMG}
+          src={
+            "https://fkcqwx31dk.ufs.sh/f/Zddv4bf9RBdIxza1NX5FPT16X4z8Wdm5fnlq2gShev7VEoJL"
+          }
           loading="eager"
           alt="Rose Misk | Exquisite Naxos-Inspired Fragrances Promotional Banner"
           fill

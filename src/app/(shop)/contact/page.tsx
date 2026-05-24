@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
-import { assets } from "../../../assets/assets";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 
@@ -150,7 +149,9 @@ const Contact: React.FC = () => {
               >
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors z-10" />
                 <motion.img
-                  src={assets.Location}
+                  src={
+                    "https://fkcqwx31dk.ufs.sh/f/Zddv4bf9RBdIluVzKh8WfIeSLq8YrVp2ghCjnostWFKdZAcm"
+                  }
                   alt="Rose Misk Office Location"
                   className="w-full h-full object-cover"
                   whileHover={{ scale: 1.1 }}

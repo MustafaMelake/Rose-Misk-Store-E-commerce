@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { assets } from "../../../assets/assets";
 import Image from "next/image";
 import Footer from "@/components/Footer";
 import { motion, Variants } from "framer-motion";
@@ -75,7 +74,9 @@ const About: React.FC = () => {
           >
             <div className="overflow-hidden rounded-xl">
               <Image
-                src={assets.Logo}
+                src={
+                  "https://fkcqwx31dk.ufs.sh/f/Zddv4bf9RBdIluVzKh8WfIeSLq8YrVp2ghCjnostWFKdZAcm"
+                }
                 alt="Rose Misk Brand Logo"
                 width={500}
                 height={300}
