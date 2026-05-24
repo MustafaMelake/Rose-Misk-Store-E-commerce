@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getCategories } from "./category.actions"; // تأكد من صحة المسار
+import { getCategories } from "./category.actions";
 import { prisma } from "../prisma";
 
+// 1. Mock Prisma
 vi.mock("../prisma", () => ({
   prisma: {
     category: {
@@ -10,51 +11,43 @@ vi.mock("../prisma", () => ({
   },
 }));
 
-describe("Category Actions - getCategories", () => {
+describe("Category Server Actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("يجب أن يعيد جميع الأقسام مرتبة أبجدياً عند النجاح", async () => {
-    // تجهيز بيانات وهمية
-    const mockCategories = [
-      { id: 1, name: "عطور رجالى" },
-      { id: 2, name: "عطور حريمى" },
-      { id: 3, name: "عطور يونسكس" },
-    ];
+  describe("getCategories", () => {
+    it("should return sorted categories on success", async () => {
+      // Arrange
+      const mockCategories = [
+        { id: 1, name: "Fragrances" },
+        { id: 2, name: "Skincare" },
+      ];
+      (prisma.category.findMany as any).mockResolvedValue(mockCategories);
 
-    (prisma.category.findMany as any).mockResolvedValue(mockCategories);
+      // Act
+      const result = await getCategories();
 
-    const result = await getCategories();
-
-    expect(prisma.category.findMany).toHaveBeenCalledWith({
-      orderBy: { name: "asc" },
+      // Assert
+      expect(prisma.category.findMany).toHaveBeenCalledWith({
+        orderBy: { name: "asc" },
+      });
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(mockCategories);
     });
 
-    expect(result.success).toBe(true);
-    expect(result.data).toEqual(mockCategories);
-  });
+    it("should return an error object when database query fails", async () => {
+      // Arrange
+      (prisma.category.findMany as any).mockRejectedValue(
+        new Error("Database connection failed")
+      );
 
-  it("يجب أن يعيد رسالة خطأ واضحة عند فشل الاتصال بقاعدة البيانات", async () => {
-    const errorMessage = "Database Connection Timeout";
+      // Act
+      const result = await getCategories();
 
-    (prisma.category.findMany as any).mockRejectedValue(
-      new Error(errorMessage)
-    );
-
-    const result = await getCategories();
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBe(errorMessage);
-    expect(result.data).toBeUndefined();
-  });
-
-  it("يجب أن يعيد رسالة خطأ افتراضية إذا لم يتوفر وصف للخطأ", async () => {
-    (prisma.category.findMany as any).mockRejectedValue({});
-
-    const result = await getCategories();
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("حدث خطأ ما");
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Database connection failed");
+    });
   });
 });

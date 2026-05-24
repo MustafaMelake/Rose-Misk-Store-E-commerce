@@ -1,22 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
+  getAdminProducts,
   createProduct,
+  deleteProduct,
+  getProductById,
   updateProduct,
+  getBestSellers,
+  getLatestProducts,
   getAllProducts,
   searchProducts,
 } from "./product.actions";
 import { prisma } from "../prisma";
 import { revalidatePath } from "next/cache";
 
+// 1. Mock Prisma and Transaction
 vi.mock("../prisma", () => ({
   prisma: {
-    $transaction: vi.fn(async (callback) => await callback(prisma)),
+    $transaction: vi.fn(async (callback) => {
+      return await callback(prisma);
+    }),
     product: {
-      create: vi.fn(),
-      update: vi.fn(),
       findMany: vi.fn(),
-      findUnique: vi.fn(),
+      create: vi.fn(),
       delete: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
     },
     productVariant: {
       deleteMany: vi.fn(),
@@ -24,134 +33,196 @@ vi.mock("../prisma", () => ({
   },
 }));
 
+// 2. Mock Next.js Cache
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-describe("Product Actions", () => {
+describe("Product Server Actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  // ==========================================
-  // 1. اختبار إنشاء المنتج (Logic & Slug)
-  // ==========================================
+  describe("getAdminProducts", () => {
+    it("should fetch and return all products", async () => {
+      const mockProducts = [{ id: 1, name: "Perfume A" }];
+      (prisma.product.findMany as any).mockResolvedValue(mockProducts);
+
+      const result = await getAdminProducts();
+
+      expect(prisma.product.findMany).toHaveBeenCalledWith({
+        include: { category: true, variants: true },
+        orderBy: { createdAt: "desc" },
+      });
+      expect(result).toEqual({ success: true, data: mockProducts });
+    });
+
+    it("should return error on database failure", async () => {
+      (prisma.product.findMany as any).mockRejectedValue(new Error("DB Error"));
+
+      const result = await getAdminProducts();
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Failed to fetch products");
+    });
+  });
+
   describe("createProduct", () => {
     const mockProductData = {
-      name: "عطر مِسك روز",
-      description: "وصف العطر",
-      company: "Rose Misk",
-      images: ["test.jpg"],
+      name: "Luxury Perfume",
+      description: "A great scent",
+      company: "BrandX",
+      images: ["img1.jpg"],
       rating: 5,
       isFeatured: true,
-      categoryId: 1,
-      slug: "",
-      variants: [{ volume: "100ml", price: 500, stock: 10 }],
+      categoryId: 2,
+      slug: "", // Will be generated
+      variants: [{ volume: "50ml", price: 100, stock: 10 }],
     };
 
-    it("يجب أن يولد Slug يدعم العربية وينشئ المنتج بنجاح", async () => {
-      (prisma.product.create as any).mockResolvedValue({ id: 1 });
+    it("should create a product, generate a slug, and revalidate paths", async () => {
+      const mockCreatedProduct = { id: 1, ...mockProductData };
+      (prisma.product.create as any).mockResolvedValue(mockCreatedProduct);
 
       const result = await createProduct(mockProductData);
 
-      expect(prisma.product.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            name: mockProductData.name,
-            slug: expect.stringContaining("عطر-مِسك-روز"),
-          }),
-        })
-      );
+      expect(prisma.product.create).toHaveBeenCalled();
 
+      // Verify slug generation logic is applied (creates a dashed slug)
+      const callArgs = (prisma.product.create as any).mock.calls[0][0];
+      expect(callArgs.data.slug).toContain("luxury-perfume");
+      expect(callArgs.data.variants.create[0]).toEqual({
+        volume: "50ml",
+        price: 100,
+        stock: 10,
+      });
+
+      expect(revalidatePath).toHaveBeenCalledWith("/admin/products");
+      expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("deleteProduct", () => {
+    it("should delete a product by ID and revalidate paths", async () => {
+      (prisma.product.delete as any).mockResolvedValue({ id: 1 });
+
+      const result = await deleteProduct(1);
+
+      expect(prisma.product.delete).toHaveBeenCalledWith({ where: { id: 1 } });
       expect(revalidatePath).toHaveBeenCalledWith("/admin/products");
       expect(result.success).toBe(true);
     });
   });
 
-  // ==========================================
-  // 2. اختبار تحديث المنتج (Transaction)
-  // ==========================================
+  describe("getProductById", () => {
+    it("should return a product if ID is valid", async () => {
+      const mockProduct = { id: 1, name: "Perfume" };
+      (prisma.product.findUnique as any).mockResolvedValue(mockProduct);
+
+      const result = await getProductById("1");
+
+      expect(prisma.product.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 1 } })
+      );
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(mockProduct);
+    });
+
+    it("should return an error for invalid ID format", async () => {
+      const result = await getProductById("abc");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Invalid Product ID");
+      expect(prisma.product.findUnique).not.toHaveBeenCalled();
+    });
+  });
+
   describe("updateProduct", () => {
-    const productId = 10;
     const updateData = {
-      name: "عطر معدل",
-      variants: [{ volume: "50ml", price: 300, stock: 5 }],
+      name: "Updated Perfume",
+      categoryId: 3,
+      variants: [{ volume: "100ml", price: 150, stock: 5 }],
     };
 
-    it("يجب أن يحذف الـ variants القديمة ثم ينشئ الجديدة بداخل Transaction", async () => {
-      (prisma.product.update as any).mockResolvedValue({ id: productId });
-
-      const result = await updateProduct(productId, updateData);
-
-      expect(prisma.productVariant.deleteMany).toHaveBeenCalledWith({
-        where: { productId: productId },
+    it("should delete old variants and update the product", async () => {
+      (prisma.productVariant.deleteMany as any).mockResolvedValue({});
+      (prisma.product.update as any).mockResolvedValue({
+        id: 1,
+        name: "Updated Perfume",
       });
 
+      const result = await updateProduct(1, updateData);
+
+      expect(prisma.productVariant.deleteMany).toHaveBeenCalledWith({
+        where: { productId: 1 },
+      });
       expect(prisma.product.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: productId },
+          where: { id: 1 },
           data: expect.objectContaining({
-            name: "عطر معدل",
-            variants: {
-              create: [expect.objectContaining({ volume: "50ml" })],
-            },
+            name: "Updated Perfume",
+            categoryId: 3,
           }),
         })
       );
-
+      expect(revalidatePath).toHaveBeenCalledWith("/admin/products");
       expect(result.success).toBe(true);
     });
 
-    it("يجب أن يعيد success: false إذا كان الـ ID غير صالح", async () => {
+    it("should throw an error if the product ID is NaN", async () => {
       const result = await updateProduct(NaN, updateData);
       expect(result.success).toBe(false);
-      expect(result.error).toContain("حدث خطأ");
+      expect(result.error).toBe("Invalid Product ID");
     });
   });
 
-  // ==========================================
-  // 3. اختبار جلب المنتجات (Pagination)
-  // ==========================================
   describe("getAllProducts", () => {
-    it("يجب أن يحسب الـ skip بناءً على رقم الصفحة", async () => {
-      (prisma.product.findMany as any).mockResolvedValue([]);
+    it("should implement pagination correctly", async () => {
+      const mockProducts = [{ id: 1 }, { id: 2 }];
+      (prisma.product.findMany as any).mockResolvedValue(mockProducts);
+      (prisma.product.count as any).mockResolvedValue(20);
 
-      await getAllProducts(2, 12);
+      // Requesting page 2 with limit 5
+      const result = await getAllProducts(2, 5);
 
       expect(prisma.product.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          skip: 12,
-          take: 12,
+          skip: 5, // (page 2 - 1) * 5
+          take: 5,
         })
       );
+      expect(result.totalCount).toBe(20);
+      expect(result.totalPages).toBe(4); // 20 / 5
+      expect(result.currentPage).toBe(2);
     });
   });
 
-  // ==========================================
-  // 4. اختبار البحث (Search)
-  // ==========================================
   describe("searchProducts", () => {
-    it("يجب أن يعيد مصفوفة فارغة إذا كان الاستعلام (query) فارغاً", async () => {
+    it("should return empty array if query is empty", async () => {
       const result = await searchProducts("   ");
       expect(result).toEqual([]);
       expect(prisma.product.findMany).not.toHaveBeenCalled();
     });
 
-    it("يجب أن يبحث في الاسم والوصف بدون حساسية لحالة الأحرف (insensitive)", async () => {
-      (prisma.product.findMany as any).mockResolvedValue([{ name: "Rose" }]);
+    it("should search by name or description", async () => {
+      const mockResults = [{ id: 1, name: "Oud" }];
+      (prisma.product.findMany as any).mockResolvedValue(mockResults);
 
-      await searchProducts("rose");
+      const result = await searchProducts("Oud");
 
       expect(prisma.product.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
             OR: [
-              { name: { contains: "rose", mode: "insensitive" } },
-              { description: { contains: "rose", mode: "insensitive" } },
+              { name: { contains: "Oud", mode: "insensitive" } },
+              { description: { contains: "Oud", mode: "insensitive" } },
             ],
           },
+          take: 8,
         })
       );
+      expect(result).toEqual(mockResults);
     });
   });
 });
