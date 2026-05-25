@@ -97,6 +97,13 @@ const Product: React.FC = () => {
     );
   }
 
+  const selectedVariant = productItem.variants?.find(
+    (v) => v.volume === selectedSize
+  );
+  const isOutOfStock = selectedVariant
+    ? Number(selectedVariant.stock) <= 0
+    : false;
+
   return (
     <>
       <div className="py-10 animate-fadeIn container mx-auto px-4">
@@ -172,50 +179,75 @@ const Product: React.FC = () => {
                   : (productItem.price || 0).toFixed(2)}
               </p>
             </div>
-
             {/* Sizes Selection */}
             <div className="mb-10">
               <div className="flex justify-between items-center mb-4">
                 <p className="font-bold uppercase text-xs tracking-widest dark:text-white">
                   Select Volume
                 </p>
-                {error && (
-                  <span className="text-red-500 text-xs animate-bounce font-bold">
-                    {error}
-                  </span>
-                )}
+                <div className="flex gap-2">
+                  {error && (
+                    <span className="text-red-500 text-xs animate-bounce font-bold">
+                      {error}
+                    </span>
+                  )}
+                  {/* رسالة بتظهر لما يختار حجم خلصان */}
+                  {isOutOfStock && (
+                    <span className="text-red-500 text-xs font-bold animate-pulse">
+                      OUT OF STOCK
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                {productItem.size.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      setSelectedSize(s);
-                      setError("");
-                    }}
-                    className={`min-w-[80px] py-3 px-4 rounded-xl border-2 transition-all duration-300 font-medium cursor-pointer ${
-                      selectedSize === s
-                        ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black shadow-lg"
-                        : "border-gray-100 dark:border-zinc-800 hover:border-gold-base dark:text-zinc-400"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
+                {productItem.size.map((s) => {
+                  // بنشوف لو الحجم ده نفسه خلصان عشان نديله شكل مختلف
+                  const variant = productItem.variants?.find(
+                    (v) => v.volume === s
+                  );
+                  const isVariantOutOfStock = variant
+                    ? Number(variant.stock) <= 0
+                    : false;
+
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setSelectedSize(s);
+                        setError("");
+                      }}
+                      className={`min-w-[80px] py-3 px-4 rounded-xl border-2 transition-all duration-300 font-medium ${
+                        selectedSize === s
+                          ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black shadow-lg"
+                          : isVariantOutOfStock
+                          ? "border-gray-200 dark:border-zinc-800 text-gray-400 dark:text-zinc-600 cursor-not-allowed opacity-60 line-through" // شكل الحجم اللي خلصان
+                          : "border-gray-100 dark:border-zinc-800 hover:border-gold-base dark:text-zinc-400 cursor-pointer"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* CTA Button */}
             <button
               onClick={handleAdd}
-              disabled={added}
-              className={`w-full py-5 rounded-2xl text-lg font-bold tracking-widest transition-all duration-500 shadow-2xl cursor-pointer ${
-                added
-                  ? "bg-gold-dark-20 text-white translate-y-[-2px]"
-                  : "bg-black dark:bg-gold-base text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-gold-light-20"
+              disabled={added || isOutOfStock}
+              className={`w-full py-5 rounded-2xl text-lg font-bold tracking-widest transition-all duration-500 shadow-2xl ${
+                isOutOfStock
+                  ? "bg-gray-300 dark:bg-zinc-800 text-gray-500 cursor-not-allowed shadow-none"
+                  : added
+                  ? "bg-gold-dark-20 text-white translate-y-[-2px] cursor-default"
+                  : "bg-black dark:bg-gold-base text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-gold-light-20 cursor-pointer"
               }`}
             >
-              {added ? "ADDED TO COLLECTION ✓" : "ADD TO CART"}
+              {isOutOfStock
+                ? "OUT OF STOCK"
+                : added
+                ? "ADDED TO COLLECTION ✓"
+                : "ADD TO CART"}
             </button>
           </div>
         </div>

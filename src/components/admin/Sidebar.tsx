@@ -8,7 +8,7 @@ import {
   ShoppingCart,
   Users,
   ArrowLeft,
-  icons,
+  MessageSquareText,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -22,7 +22,7 @@ export default function Sidebar() {
     {
       name: "Reviews",
       href: "/admin/reviews",
-      icon: Users,
+      icon: MessageSquareText,
     },
   ];
 
