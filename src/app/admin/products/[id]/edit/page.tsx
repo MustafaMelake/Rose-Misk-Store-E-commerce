@@ -11,14 +11,11 @@ interface EditProductPageProps {
 export default async function EditProductPage({
   params,
 }: EditProductPageProps) {
-  // 1. لازم تعمل await للـ params قبل ما تفكها (Destructure)
   const resolvedParams = await params;
   const id = resolvedParams.id;
 
-  // 2. جلب النتيجة من الـ Server Action
   const result = await getProductById(id);
 
-  // 3. التحقق من النجاح وجودة البيانات
   if (!result.success || !result.data) {
     notFound();
   }
@@ -33,7 +30,6 @@ export default async function EditProductPage({
         </p>
       </div>
 
-      {/* 3. تمرير البيانات للـ Client Component */}
       <EditProductForm initialData={productData} />
     </div>
   );

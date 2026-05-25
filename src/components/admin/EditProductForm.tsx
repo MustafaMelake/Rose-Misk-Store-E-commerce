@@ -18,7 +18,6 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
     name: initialData?.name || "",
     description: initialData?.description || "",
     company: initialData?.company || "Rose Misk",
-    rating: initialData?.rating || 5,
     isFeatured: initialData?.isFeatured || false,
     categoryId: initialData?.categoryId || "",
     subcategory: initialData?.subcategory || "designer",
@@ -65,7 +64,6 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
     setLoading(true);
     setError("");
 
-    // 2. إرسال البيانات لدالة التحديث
     const result = await updateProduct(Number(initialData.id), {
       ...formData,
       variants,
@@ -74,7 +72,7 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
 
     if (result.success) {
       router.push("/admin/products");
-      router.refresh(); // لضمان تحديث الجدول
+      router.refresh();
     } else {
       setError(result.error || "فشل في تحديث المنتج");
       setLoading(false);
@@ -231,28 +229,18 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 pt-4 border-t dark:border-zinc-800">
-            <div className="space-y-2">
-              <label className="text-sm font-medium dark:text-zinc-300">
-                Rating (0-5)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="5"
-                step="0.1"
-                value={formData.rating}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    rating: parseFloat(e.target.value),
-                  })
-                }
-                className="w-full p-2 border dark:border-zinc-800 rounded-md bg-transparent dark:text-white outline-none"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t dark:border-zinc-800 items-center">
+            <div className="space-y-1">
+              <span className="text-sm font-medium text-zinc-400 dark:text-zinc-500 block">
+                Current Live Rating
+              </span>
+              <div className="text-lg font-bold text-amber-500 flex items-center gap-1">
+                ⭐ {initialData?.rating?.toFixed(1) || "No ratings yet"}
+              </div>
             </div>
 
-            <div className="flex items-center gap-3 pt-6">
+            {/* زر الـ Featured */}
+            <div className="flex items-center gap-3 md:justify-end pt-2 md:pt-0">
               <input
                 type="checkbox"
                 id="isFeatured"

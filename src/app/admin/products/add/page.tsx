@@ -280,28 +280,8 @@ export default function AddProductPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-6 pt-4 border-t dark:border-zinc-800">
-            <div className="space-y-2">
-              <label className="text-sm font-medium dark:text-zinc-300">
-                Initial Rating (0-5)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="5"
-                step="0.1"
-                value={formData.rating}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    rating: parseFloat(e.target.value),
-                  })
-                }
-                className="w-full p-2 border dark:border-zinc-800 rounded-md bg-transparent dark:text-white outline-none"
-              />
-            </div>
-
-            <div className="flex items-center gap-3 pt-6">
+          <div className="pt-4 border-t dark:border-zinc-800">
+            <div className="flex items-center gap-3 py-2">
               <input
                 type="checkbox"
                 id="isFeatured"
