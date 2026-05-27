@@ -279,6 +279,7 @@ export async function getTopSellingProducts() {
     });
 
     const productIds = topSellersGrouping.map((item) => item.productId);
+
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
       select: {
@@ -289,14 +290,29 @@ export async function getTopSellingProducts() {
       },
     });
 
+    const orderItemsForRevenue = await prisma.orderItem.findMany({
+      where: { productId: { in: productIds } },
+      select: { productId: true, quantity: true, price: true },
+    });
+
     const result = topSellersGrouping.map((item) => {
       const product = products.find((p) => p.id === item.productId);
+
+      const productOrders = orderItemsForRevenue.filter(
+        (oi) => oi.productId === item.productId
+      );
+      const totalRevenue = productOrders.reduce(
+        (sum, current) => sum + current.quantity * current.price,
+        0
+      );
+
       return {
         id: product?.id,
         name: product?.name,
         image: product?.images[0],
         company: product?.company,
         totalSold: item._sum.quantity || 0,
+        totalRevenue: totalRevenue,
       };
     });
 

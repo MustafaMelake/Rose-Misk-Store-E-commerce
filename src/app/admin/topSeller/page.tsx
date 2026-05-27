@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { TrendingUp, Star, Award, BarChart3 } from "lucide-react";
+import { TrendingUp, Star, Award, BarChart3, Banknote } from "lucide-react";
 import {
   getTopSellingProducts,
   getTopRatedProducts,
@@ -26,7 +26,8 @@ export default async function TopSellersPage() {
             Store Performance
           </h1>
           <p className="text-gray-500 dark:text-zinc-400 mt-1">
-            Track your best-selling fragrances and top-rated products.
+            Track your best-selling fragrances, top-rated products, and total
+            revenue.
           </p>
         </div>
       </div>
@@ -40,7 +41,7 @@ export default async function TopSellersPage() {
                 <TrendingUp size={24} />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Top Selling
+                Top Selling Revenue
               </h2>
             </div>
             <span className="text-sm font-medium text-gray-500 bg-white dark:bg-zinc-800 py-1 px-3 rounded-full shadow-sm">
@@ -54,7 +55,7 @@ export default async function TopSellersPage() {
                 <div key={product.id} className="flex items-center gap-5 group">
                   <div className="flex-shrink-0 w-8 text-center">
                     {index === 0 ? (
-                      <Award className="mx-auto text-gold-base" size={28} />
+                      <Award className="mx-auto text-yellow-500" size={28} />
                     ) : (
                       <span className="text-xl font-bold text-gray-300 dark:text-zinc-700">
                         #{index + 1}
@@ -72,7 +73,7 @@ export default async function TopSellersPage() {
                   </div>
 
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-gold-base transition-colors">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors">
                       {product.name}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-zinc-400">
@@ -80,12 +81,16 @@ export default async function TopSellersPage() {
                     </p>
                   </div>
 
-                  <div className="text-right">
-                    <span className="block text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                      {product.totalSold}
-                    </span>
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                      Units Sold
+                  {/* 💰 عرض الفلوس وعدد القطع */}
+                  <div className="text-right flex flex-col items-end">
+                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                      <span className="text-xl font-black">
+                        {product.totalRevenue?.toLocaleString()}
+                      </span>
+                      <span className="text-sm font-bold">EGP</span>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-1">
+                      {product.totalSold} Units Sold
                     </span>
                   </div>
                 </div>
@@ -134,7 +139,7 @@ export default async function TopSellersPage() {
                   </div>
 
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-gold-base transition-colors">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-amber-500 transition-colors">
                       {product.name}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-zinc-400">
@@ -152,8 +157,8 @@ export default async function TopSellersPage() {
                         className="fill-amber-500 text-amber-500"
                       />
                     </div>
-                    <span className="text-xs font-semibold text-gray-400 mt-1">
-                      {product.reviewsCount} REVIEWS
+                    <span className="text-xs font-semibold text-gray-400 mt-1 uppercase">
+                      {product.reviewsCount} Reviews
                     </span>
                   </div>
                 </div>

@@ -25,7 +25,7 @@ export default function Sidebar() {
       href: "/admin/reviews",
       icon: MessageSquareText,
     },
-    { name: "Performance", href: "/admin/Topseller", icon: TrendingUp },
+    { name: "Performance", href: "/admin/topSeller", icon: TrendingUp },
   ];
 
   return (
