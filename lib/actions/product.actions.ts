@@ -262,3 +262,72 @@ export async function searchProducts(query: string) {
     return [];
   }
 }
+
+export async function getTopSellingProducts() {
+  try {
+    const topSellersGrouping = await prisma.orderItem.groupBy({
+      by: ["productId"],
+      _sum: {
+        quantity: true,
+      },
+      orderBy: {
+        _sum: {
+          quantity: "desc",
+        },
+      },
+      take: 5,
+    });
+
+    const productIds = topSellersGrouping.map((item) => item.productId);
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: {
+        id: true,
+        name: true,
+        images: true,
+        company: true,
+      },
+    });
+
+    const result = topSellersGrouping.map((item) => {
+      const product = products.find((p) => p.id === item.productId);
+      return {
+        id: product?.id,
+        name: product?.name,
+        image: product?.images[0],
+        company: product?.company,
+        totalSold: item._sum.quantity || 0,
+      };
+    });
+
+    return result.sort((a, b) => b.totalSold - a.totalSold);
+  } catch (error) {
+    console.error("Error fetching top selling products:", error);
+    return [];
+  }
+}
+
+export async function getTopRatedProducts() {
+  try {
+    const topRated = await prisma.product.findMany({
+      where: {
+        reviewsCount: { gt: 0 },
+      },
+      orderBy: [{ rating: "desc" }, { reviewsCount: "desc" }],
+      take: 5,
+      select: {
+        id: true,
+        name: true,
+        images: true,
+        company: true,
+        rating: true,
+        reviewsCount: true,
+      },
+    });
+
+    return topRated;
+  } catch (error) {
+    console.error("Error fetching top rated products:", error);
+    return [];
+  }
+}

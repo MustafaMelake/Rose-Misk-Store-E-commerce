@@ -9,6 +9,7 @@ import {
   Users,
   ArrowLeft,
   MessageSquareText,
+  TrendingUp,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -24,13 +25,11 @@ export default function Sidebar() {
       href: "/admin/reviews",
       icon: MessageSquareText,
     },
+    { name: "Performance", href: "/admin/Topseller", icon: TrendingUp },
   ];
 
   return (
     <aside className="w-64 bg-white dark:bg-zinc-950 border-r dark:border-zinc-800 sticky top-0 h-screen flex flex-col hidden md:flex">
-      {/* Admin Logo */}
-
-      {/* Navigation Links */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {links.map((link) => {
           const isActive =
@@ -54,7 +53,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer (Back to Store) */}
       <div className="p-4 border-t dark:border-zinc-800">
         <Link
           href="/"
