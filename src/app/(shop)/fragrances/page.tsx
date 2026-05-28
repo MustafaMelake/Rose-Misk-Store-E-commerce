@@ -18,7 +18,6 @@ const Fragrances: React.FC = () => {
   const [subCategories, setSubCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string>("relevant");
 
-  // --- States الخاصة بالـ Pagination ---
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 8;
 
@@ -32,7 +31,6 @@ const Fragrances: React.FC = () => {
     fetchCats();
   }, []);
 
-  // إرجاع الصفحة لرقم 1 عند تغيير أي فلتر أو ترتيب
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategories, subCategories, sortBy]);
@@ -102,7 +100,6 @@ const Fragrances: React.FC = () => {
     <div className="flex flex-col sm:flex-row gap-1 sm:gap-12 pt-10 border-t dark:border-zinc-800 dark:text-white px-4 sm:px-[5vw] md:px-[3vw] lg:px-[4vw]">
       {/* FILTER SIDEBAR */}
       <div className="min-w-60">
-        {/* زرار الفلاتر للموبايل (تم تحسينه ليكون Touch-friendly) */}
         <div
           onClick={() => setShowFilter((s) => !s)}
           className="my-2 text-xl cursor-pointer flex items-center justify-between sm:justify-start gap-2 font-medium bg-gray-50 dark:bg-zinc-900/50 sm:bg-transparent sm:dark:bg-transparent p-3 sm:p-0 rounded-lg sm:rounded-none select-none active:scale-[0.98] sm:active:scale-100 transition-all"

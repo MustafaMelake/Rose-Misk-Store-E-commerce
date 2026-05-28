@@ -101,6 +101,7 @@ const Cart: React.FC = () => {
                   <Image
                     src={item.image}
                     alt={item.name}
+                    priority
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-700"
                   />

@@ -115,7 +115,7 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
   // 1. تحميل المنتجات
   useEffect(() => {
     const fetchAll = async () => {
-      const data = await getAllProducts();
+      const data = await getAllProducts(1, 100);
       setProducts(
         data?.products && Array.isArray(data.products) ? data.products : []
       );
