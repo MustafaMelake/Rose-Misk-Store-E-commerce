@@ -347,3 +347,27 @@ export async function getTopRatedProducts() {
     return [];
   }
 }
+
+export async function getInventoryProducts() {
+  try {
+    const products = await prisma.productVariant.findMany({
+      include: {
+        product: {
+          select: {
+            name: true,
+            images: true,
+            company: true,
+          },
+        },
+      },
+      orderBy: {
+        stock: "asc",
+      },
+    });
+
+    return products;
+  } catch (error) {
+    console.error("Error fetching inventory products:", error);
+    return [];
+  }
+}

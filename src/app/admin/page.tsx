@@ -1,4 +1,3 @@
-// src/app/admin/page.tsx
 import { prisma } from "../../../lib/prisma";
 import {
   Card,
@@ -13,7 +12,6 @@ import { RevenueChart } from "@/components/admin/RevenueChart";
 export default async function AdminDashboard() {
   const [totalRevenue, ordersCount, usersCount, pendingOrdersCount] =
     await Promise.all([
-      // ✅ التعديل الأول: جمع الفلوس للطلبات المشحونة والمستلمة فقط
       prisma.order.aggregate({
         _sum: { totalAmount: true },
         where: {
@@ -35,7 +33,7 @@ export default async function AdminDashboard() {
       createdAt: {
         gte: new Date(new Date().setMonth(new Date().getMonth() - 6)),
       },
-      status: { in: ["SHIPPED", "DELIVERED"] }, // السر هنا
+      status: { in: ["SHIPPED", "DELIVERED"] }, 
     },
     select: { totalAmount: true, createdAt: true },
   });
@@ -109,7 +107,6 @@ export default async function AdminDashboard() {
   );
 }
 
-// ... كود الـ StatsCard زي ما هو
 function StatsCard({
   title,
   value,

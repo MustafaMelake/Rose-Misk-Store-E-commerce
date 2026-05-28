@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   MessageSquareText,
   TrendingUp,
+  PackageOpen,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -19,13 +20,10 @@ export default function Sidebar() {
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Products", href: "/admin/products", icon: Package },
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
-    { name: "Users", href: "/admin/users", icon: Users },
-    {
-      name: "Reviews",
-      href: "/admin/reviews",
-      icon: MessageSquareText,
-    },
+    { name: "Inventory", href: "/admin/stock", icon: PackageOpen },
     { name: "Performance", href: "/admin/topSeller", icon: TrendingUp },
+    { name: "Users", href: "/admin/users", icon: Users },
+    { name: "Reviews", href: "/admin/reviews", icon: MessageSquareText },
   ];
 
   return (
