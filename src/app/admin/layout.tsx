@@ -8,13 +8,13 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // const session = await auth.api.getSession({
-  //   headers: await headers(),
-  // });
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-  // if (!session || session.user.role !== "ADMIN") {
-  //   redirect("/");
-  // }
+  if (!session || session.user.role !== "ADMIN") {
+    redirect("/");
+  }
 
   return (
     <div className="flex min-h-screen bg-white dark:bg-black transition-colors duration-300">
