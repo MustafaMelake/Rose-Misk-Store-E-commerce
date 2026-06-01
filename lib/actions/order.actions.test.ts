@@ -10,7 +10,6 @@ import { auth } from "../auth";
 import { revalidatePath } from "next/cache";
 
 // 1. Mock Prisma and $transaction
-// We mock $transaction to simply execute the callback function we pass to it.
 vi.mock("../prisma", () => ({
   prisma: {
     $transaction: vi.fn(async (callback) => {
@@ -50,6 +49,15 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+// 4. Mock ملف الشحن لضمان عزل دالة الفحص (Unit Isolation) أو استخدام قيم افتراضية متوقعة
+vi.mock("../../lib/shipping", () => ({
+  calculateShippingFee: vi.fn((gov) => {
+    if (gov === "القاهرة") return 75;
+    if (gov === "سوهاج") return 115;
+    return 85;
+  }),
+}));
+
 describe("Order Server Actions", () => {
   const mockUserId = "user_123";
 
@@ -58,10 +66,12 @@ describe("Order Server Actions", () => {
   });
 
   describe("createOrder", () => {
+    // تحديث الموك داتا ليشمل حقل المحافظة الجديد
     const mockOrderData = {
       customerName: "John Doe",
       customerEmail: "john@example.com",
       customerPhone: "123456789",
+      governorate: "القاهرة", // المحافظة المضافة
       address: "123 Main St",
       paymentMethod: "COD",
     };
@@ -69,7 +79,7 @@ describe("Order Server Actions", () => {
     const mockItems = [{ id: 1, size: "50ml", quantity: 2 }];
 
     it("should successfully create an order and clear the cart", async () => {
-      // Arrange: Mock the product variant existing with enough stock
+      // Arrange: موك للمنتج بسعر 100 ومخزون كافي
       (prisma.productVariant.findFirst as any).mockResolvedValue({
         id: 99,
         productId: 1,
@@ -78,7 +88,6 @@ describe("Order Server Actions", () => {
         stock: 5,
       });
 
-      // Mock order creation returning an ID
       (prisma.order.create as any).mockResolvedValue({ id: 1001 });
 
       // Act
@@ -89,23 +98,23 @@ describe("Order Server Actions", () => {
         where: { productId: 1, volume: "50ml" },
       });
 
-      // Check if stock was decremented
       expect(prisma.productVariant.update).toHaveBeenCalledWith({
         where: { id: 99 },
         data: { stock: { decrement: 2 } },
       });
 
-      // Check if order was created with correct total (2 * 100 + 80 delivery)
+      // الحسبة الجديدة: المنتجات (2 * 100) + شحن القاهرة (75) = 275
       expect(prisma.order.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           customerName: "John Doe",
-          totalAmount: 280,
+          governorate: "القاهرة", // التأكد من حفظ المحافظة
+          shippingFee: 75, // التأكد من حفظ مصاريف الشحن الصحيحة
+          totalAmount: 275, // الإجمالي المحدث (بدل 280 القديم)
           status: "PENDING",
           userId: mockUserId,
         }),
       });
 
-      // Check if cart was cleared
       expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({
         where: { userId: mockUserId },
       });
@@ -115,10 +124,10 @@ describe("Order Server Actions", () => {
     });
 
     it("should fail if product variant does not exist or stock is insufficient", async () => {
-      // Arrange: Mock insufficient stock
+      // Arrange
       (prisma.productVariant.findFirst as any).mockResolvedValue({
         id: 99,
-        stock: 1, // Wants 2, only has 1
+        stock: 1, // طلب 2 ومعندناش غير 1
       });
 
       // Act
@@ -141,7 +150,9 @@ describe("Order Server Actions", () => {
           createdAt: mockDate,
           status: "DELIVERED",
           paymentMethod: "CARD",
-          totalAmount: 500,
+          totalAmount: 575,
+          shippingFee: 75, // حقل مضاف لقاعدة البيانات
+          governorate: "القاهرة", // حقل مضاف لقاعدة البيانات
           items: [
             {
               productId: 10,
@@ -161,6 +172,8 @@ describe("Order Server Actions", () => {
       expect(result.success).toBe(true);
       expect(result.orders![0].id).toBe(1);
       expect(result.orders![0].status).toBe("DELIVERED");
+      expect(result.orders![0].shippingFee).toBe(75); // فحص تسليم قيمة الشحن للفرونت
+      expect(result.orders![0].governorate).toBe("القاهرة"); // فحص تسليم اسم المحافظة للفرونت
       expect(result.orders![0].items[0].name).toBe("Perfume A");
     });
   });
@@ -211,8 +224,6 @@ describe("Order Server Actions", () => {
       };
 
       (prisma.order.findUnique as any).mockResolvedValue(existingOrder);
-
-      // Mock finding the variant to restock
       (prisma.productVariant.findFirst as any).mockResolvedValue({ id: 99 });
 
       // Act
@@ -224,7 +235,6 @@ describe("Order Server Actions", () => {
         data: { status: "CANCELLED" },
       });
 
-      // Verify stock was incremented (restocked)
       expect(prisma.productVariant.update).toHaveBeenCalledWith({
         where: { id: 99 },
         data: { stock: { increment: 2 } },
@@ -255,7 +265,6 @@ describe("Order Server Actions", () => {
         data: { status: "SHIPPED" },
       });
 
-      // Verify stock update was NEVER called
       expect(prisma.productVariant.update).not.toHaveBeenCalled();
       expect(result.success).toBe(true);
     });

@@ -4,7 +4,7 @@ export default async function AdminReviewsPage() {
   const pendingReviews = await getPendingReviews();
 
   return (
-    <div className="p-6 md:p-10 bg-white dark:bg-black min-h-screen">
+    <div className="flex-1 space-y-2 p-2 pt-1 min-h-screen bg-white dark:bg-black">
       <div className="max-w-6xl mx-auto">
         <header className="mb-10">
           <h1 className="prata-regular text-4xl text-black dark:text-white mb-2">

@@ -15,14 +15,11 @@ export default async function TopSellersPage() {
   const topRated = await getTopRatedProducts();
 
   return (
-    <div className="p-6 md:p-10 space-y-10 animate-fadeIn">
+    <div className="flex-1 space-y-2 p-2 pt-1 min-h-screen">
       {/* Header Section */}
       <div className="flex items-center gap-4 border-b border-gray-200 dark:border-zinc-800 pb-6">
-        <div className="p-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl shadow-lg">
-          <BarChart3 size={32} />
-        </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="prata-regular text-4xl text-black dark:text-white mb-2">
             Store Performance
           </h1>
           <p className="text-gray-500 dark:text-zinc-400 mt-1">
