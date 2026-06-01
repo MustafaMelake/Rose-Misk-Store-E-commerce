@@ -51,6 +51,7 @@ const Contact: React.FC = () => {
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-12">
+          {/* CONTACT FORM */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -104,6 +105,7 @@ const Contact: React.FC = () => {
             </form>
           </motion.div>
 
+          {/* CONTACT INFO & MAP */}
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -116,22 +118,28 @@ const Contact: React.FC = () => {
             className="flex flex-col justify-between space-y-8"
           >
             <div className="space-y-8">
+              {/* رابط الواتساب المباشر بالصيغة الدولية */}
               <ContactInfoItem
                 icon={<Phone size={20} />}
-                title="Phone"
-                detail="+20 0111 684 5684"
+                title="Phone & WhatsApp"
+                detail="+20 111 684 5684"
+                href="https://wa.me/201116845684"
                 variants={itemVariants}
               />
+              {/* رابط الايميل الرسمي الجديد */}
               <ContactInfoItem
                 icon={<Mail size={20} />}
                 title="Email"
-                detail="rosemisk@gmail.com"
+                detail="rosemisk111@gmail.com"
+                href="mailto:rosemisk111@gmail.com"
                 variants={itemVariants}
               />
+              {/* تحديث العنوان لـ منوف المنوفية ورابطه بخرائط جوجل للراحة */}
               <ContactInfoItem
                 icon={<MapPin size={20} />}
                 title="Location"
-                detail="Cairo, Egypt"
+                detail="منوف، المنوفية (Menouf, Menofia)"
+                href="https://maps.google.com/?q=Menouf,Menofia,Egypt"
                 variants={itemVariants}
               />
             </div>
@@ -142,7 +150,7 @@ const Contact: React.FC = () => {
               className="group relative rounded-2xl overflow-hidden shadow-lg h-60 border border-gray-200 dark:border-zinc-800"
             >
               <a
-                href="https://maps.google.com"
+                href="https://maps.google.com/?q=Menouf,Menofia,Egypt"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full h-full"
@@ -172,6 +180,7 @@ interface InfoItemProps {
   title: string;
   detail: string;
   variants: any;
+  href?: string; // أضفنا الـ href هنا كـ Optional Property
 }
 
 const ContactInfoItem: React.FC<InfoItemProps> = ({
@@ -179,6 +188,7 @@ const ContactInfoItem: React.FC<InfoItemProps> = ({
   title,
   detail,
   variants,
+  href,
 }) => (
   <motion.div variants={variants} className="flex items-start gap-4 group">
     <motion.div
@@ -189,7 +199,18 @@ const ContactInfoItem: React.FC<InfoItemProps> = ({
     </motion.div>
     <div>
       <h3 className="text-lg font-semibold dark:text-gold-base">{title}</h3>
-      <p className="text-gray-600 dark:text-gray-300">{detail}</p>
+      {href ? (
+        <a
+          href={href}
+          target={href.startsWith("mailto:") ? undefined : "_blank"}
+          rel="noopener noreferrer"
+          className="text-gray-600 dark:text-gray-300 hover:text-gold-base dark:hover:text-gold-base font-medium transition-colors duration-200 block"
+        >
+          {detail}
+        </a>
+      ) : (
+        <p className="text-gray-600 dark:text-gray-300">{detail}</p>
+      )}
     </div>
   </motion.div>
 );
