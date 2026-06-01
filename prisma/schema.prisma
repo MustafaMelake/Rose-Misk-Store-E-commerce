@@ -78,7 +78,9 @@ model Order {
   customerName  String
   customerEmail String
   customerPhone String
+  governorate   String      @default("")
   address       String
+  shippingFee   Float       @default(0)
   totalAmount   Float
   paymentMethod String      @default("COD")
   status        OrderStatus @default(PENDING)

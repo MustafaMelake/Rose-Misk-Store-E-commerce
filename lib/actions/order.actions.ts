@@ -3,6 +3,7 @@ import { prisma } from "../prisma";
 import { auth } from "../auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { calculateShippingFee } from "../../lib/shipping";
 
 export type OrderStatusType =
   | "PENDING"
@@ -48,7 +49,7 @@ export async function createOrder(
         });
       }
 
-      const deliveryFee = 80;
+      const deliveryFee = calculateShippingFee(orderData.governorate);
       const finalTotal = serverTotal + deliveryFee;
 
       const initialStatus = (
@@ -59,7 +60,9 @@ export async function createOrder(
         customerName: orderData.customerName,
         customerEmail: orderData.customerEmail,
         customerPhone: orderData.customerPhone,
+        governorate: orderData.governorate,
         address: orderData.address,
+        shippingFee: deliveryFee,
         totalAmount: finalTotal,
         paymentMethod: orderData.paymentMethod || "COD",
         status: initialStatus,
@@ -115,9 +118,11 @@ export async function getUserOrders(userId: string) {
         month: "short",
         year: "numeric",
       }),
-      status: order.status, // PENDING, DELIVERED, etc.
+      status: order.status,
       payment: order.paymentMethod,
       total: order.totalAmount,
+      shippingFee: order.shippingFee,
+      governorate: order.governorate,
       items: order.items.map((item) => ({
         id: item.productId,
         name: item.product.name,
@@ -194,8 +199,6 @@ export async function updateOrderStatus(
         data: { status: newStatus },
       });
 
-      // 3. لو الآدمن عمل للطلب CANCELLED (وهو مكنش ملغي قبل كده)
-      // لازم نرجع الكميات (Stock) للمخزن
       if (newStatus === "CANCELLED" && existingOrder.status !== "CANCELLED") {
         for (const item of existingOrder.items) {
           const variant = await tx.productVariant.findFirst({
@@ -212,9 +215,8 @@ export async function updateOrderStatus(
       }
     });
 
-    // نعمل ريفريش للصفحات عشان الداتا تتحدث
     revalidatePath("/admin/orders");
-    revalidatePath("/admin"); // ضيف مسار الداشبورد بتاعك هنا
+    revalidatePath("/admin");
 
     return { success: true };
   } catch (error) {

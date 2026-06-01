@@ -1,11 +1,11 @@
 "use client";
+
 import React, { useContext } from "react";
 import Image from "next/image";
 import { ShopContext } from "../../../context/ShopContext";
 import Title from "../../../components/Title";
 import Footer from "@/components/Footer";
 
-// تحسين الـ Interfaces لتطابق بيانات الداتابيز الحقيقية
 interface OrderItem {
   id: string | number;
   name: string;
@@ -27,10 +27,12 @@ interface NormalizedItem {
 interface Order {
   id: string | number;
   date: string;
-  status: string; // ستأتي كـ PENDING, DELIVERED, إلخ من Prisma
+  status: string;
   items: OrderItem[];
   payment: string;
   total: number | string;
+  shippingFee?: number;
+  governorate?: string;
 }
 
 const Orders: React.FC = () => {
@@ -40,7 +42,6 @@ const Orders: React.FC = () => {
 
   const { currency, userOrders } = context;
 
-  // وظيفة لتحويل الصور والبيانات لصيغة موحدة للعرض
   const normalizeOrderItems = (items: OrderItem[]): NormalizedItem[] => {
     if (Array.isArray(items)) {
       return items.map((it) => ({
@@ -55,9 +56,27 @@ const Orders: React.FC = () => {
     return [];
   };
 
-  // وظيفة لتنسيق حالة الطلب (Text Formatting)
   const formatStatus = (status: string) => {
-    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    return status
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const getStatusColorClass = (status: string) => {
+    switch (status) {
+      case "DELIVERED":
+      case "PAID":
+        return "bg-green-500";
+      case "CANCELLED":
+        return "bg-red-500";
+      case "SHIPPED":
+        return "bg-blue-500";
+      case "AWAITING_PAYMENT":
+      case "PENDING":
+      default:
+        return "bg-gold-base";
+    }
   };
 
   return (
@@ -100,11 +119,9 @@ const Orders: React.FC = () => {
 
                     <div className="flex items-center gap-2">
                       <div
-                        className={`w-2 h-2 rounded-full ${
-                          order.status === "DELIVERED"
-                            ? "bg-green-500"
-                            : "bg-gold-base"
-                        }`}
+                        className={`w-2 h-2 rounded-full ${getStatusColorClass(
+                          order.status
+                        )}`}
                       />
                       <span className="text-sm font-semibold">
                         {formatStatus(order.status)}
@@ -173,20 +190,42 @@ const Orders: React.FC = () => {
                     ))}
                   </div>
 
-                  {/* Footer Section */}
-                  <div className="bg-gray-50 dark:bg-zinc-800/50 p-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div className="text-sm">
-                      <span className="text-gray-400">Payment Method: </span>
-                      <span className="font-medium uppercase">
-                        {order.payment}
-                      </span>
+                  <div className="bg-gray-50 dark:bg-zinc-800/50 p-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-gray-100 dark:border-zinc-800 text-sm">
+                    <div className="flex flex-wrap gap-x-6 gap-y-2">
+                      <div>
+                        <span className="text-gray-400">Payment: </span>
+                        <span className="font-medium uppercase">
+                          {order.payment}
+                        </span>
+                      </div>
+                      {order.governorate &&
+                        order.governorate !== "غير مححدد" && (
+                          <div>
+                            <span className="text-gray-400">Shipping to: </span>
+                            <span className="font-medium text-gold-base">
+                              {order.governorate}
+                            </span>
+                          </div>
+                        )}
                     </div>
-                    <div className="flex items-center gap-4">
-                      <p className="text-gray-400">Grand Total:</p>
-                      <p className="font-bold text-xl text-black dark:text-white">
-                        {currency}
-                        {Number(order.total || 0).toFixed(2)}
-                      </p>
+
+                    <div className="flex flex-col sm:items-end gap-0.5">
+                      {order.shippingFee !== undefined &&
+                        order.shippingFee > 0 && (
+                          <p className="text-xs text-gray-400">
+                            Shipping Fee: {currency}
+                            {Number(order.shippingFee).toFixed(2)}
+                          </p>
+                        )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 font-normal">
+                          Grand Total:
+                        </span>
+                        <p className="font-bold text-xl text-black dark:text-white">
+                          {currency}
+                          {Number(order.total || 0).toFixed(2)}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

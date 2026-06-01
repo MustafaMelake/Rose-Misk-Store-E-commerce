@@ -6,7 +6,8 @@ const CheckOut: React.FC = () => {
 
   if (!context) return null;
 
-  const { currency, delivery_fee, subtotal, total, goToCheckout } = context;
+  // شلنا استدعاء delivery_fee و total لأن حسابهم النهائي هيتم في شاشة الدفع
+  const { currency, subtotal, goToCheckout } = context;
 
   return (
     <div className="p-6 border rounded-xl shadow-sm h-fit flex flex-col gap-4 bg-white dark:bg-zinc-900 dark:border-zinc-800">
@@ -20,21 +21,25 @@ const CheckOut: React.FC = () => {
         </span>
       </div>
 
-      <div className="flex justify-between dark:text-gray-300">
+      <div className="flex justify-between dark:text-gray-300 items-center">
         <span>Delivery Fee:</span>
-        <span className="font-medium">
-          {currency}
-          {delivery_fee.toFixed(2)}
+        <span className="text-[11px] bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 px-2 py-1 rounded-md font-medium">
+          Calculated at checkout
         </span>
       </div>
 
       <hr className="my-2 border-gray-100 dark:border-zinc-800" />
 
-      <div className="flex justify-between font-bold text-lg dark:text-gold-base">
-        <span>Total:</span>
+      <div className="flex justify-between font-bold text-lg dark:text-gold-base items-end">
+        <div className="flex flex-col">
+          <span>Total:</span>
+          <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500 tracking-wider uppercase">
+            Excludes Delivery
+          </span>
+        </div>
         <span>
           {currency}
-          {total.toFixed(2)}
+          {subtotal.toFixed(2)}
         </span>
       </div>
 

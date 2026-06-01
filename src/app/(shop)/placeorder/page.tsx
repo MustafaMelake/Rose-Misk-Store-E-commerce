@@ -4,6 +4,10 @@ import React, { useContext, useMemo, useState } from "react";
 import { ShopContext } from "../../../context/ShopContext";
 import { useRouter } from "next/navigation";
 import { authClient } from "../../../../lib/auth-client";
+import {
+  ALL_GOVERNORATES,
+  calculateShippingFee,
+} from "../../../../lib/shipping";
 
 interface CartItem {
   id: number;
@@ -93,7 +97,10 @@ const PlaceOrder: React.FC = () => {
     [cartData]
   );
 
-  const total = subtotal + delivery_fee;
+  const dynamicDeliveryFee = formData.state
+    ? calculateShippingFee(formData.state)
+    : 0;
+  const total = subtotal + dynamicDeliveryFee;
 
   /** ---------------- SUBMIT HANDLER ---------------- **/
   const onSubmitHandler = async (e: React.FormEvent) => {
@@ -191,15 +198,22 @@ const PlaceOrder: React.FC = () => {
                   placeholder="City"
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 outline-none focus:border-gold-base transition-all"
                 />
-                <input
+                <select
                   required
                   name="state"
                   value={formData.state}
-                  onChange={onChangeHandler}
-                  type="text"
-                  placeholder="State / Governorate"
-                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 outline-none focus:border-gold-base transition-all"
-                />
+                  onChange={(e: any) => onChangeHandler(e)}
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 outline-none focus:border-gold-base transition-all appearance-none"
+                >
+                  <option value="" disabled>
+                    اختر المحافظة / State
+                  </option>
+                  {ALL_GOVERNORATES.map((gov) => (
+                    <option key={gov} value={gov}>
+                      {gov}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <input
@@ -251,7 +265,9 @@ const PlaceOrder: React.FC = () => {
             <div className="flex justify-between text-gray-500 dark:text-gray-400 text-sm">
               <span>Shipping Fee</span>
               <span>
-                {currency} {delivery_fee.toFixed(2)}
+                {dynamicDeliveryFee === 0
+                  ? "اختر المحافظة"
+                  : `${currency} ${dynamicDeliveryFee.toFixed(2)}`}
               </span>
             </div>
             <div className="h-[1px] bg-gray-100 dark:bg-zinc-800 my-2"></div>

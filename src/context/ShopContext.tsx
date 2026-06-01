@@ -247,7 +247,8 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
       customerName: `${formData.firstName} ${formData.lastName}`,
       customerEmail: formData.email,
       customerPhone: formData.phone,
-      address: `${formData.street}, ${formData.city}, ${formData.state}, ${formData.zipcode}`,
+      governorate: formData.state,
+      address: `${formData.street}, ${formData.city}, ${formData.zipcode}`,
       paymentMethod,
       totalAmount: total,
     };
