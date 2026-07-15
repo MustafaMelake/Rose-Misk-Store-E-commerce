@@ -65,7 +65,10 @@ interface DeliveryData {
 export interface ShopContextType {
   products: Product[];
   currency: string;
+<<<<<<< HEAD
   delivery_fee: number;
+=======
+>>>>>>> client-release
   searchOpen: boolean;
   setSearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
   closeSearch: () => void;
@@ -79,7 +82,10 @@ export interface ShopContextType {
   ) => void;
   getCartCount: number;
   goToCheckout: () => void;
+<<<<<<< HEAD
   total: number;
+=======
+>>>>>>> client-release
   subtotal: number;
   placeOrder: (
     cartData: CartItems,
@@ -110,14 +116,26 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
   const userId = session.data?.user.id;
 
   const currency = "EGP ";
+<<<<<<< HEAD
   const delivery_fee = 80;
+=======
+>>>>>>> client-release
 
   // 1. تحميل المنتجات
   useEffect(() => {
     const fetchAll = async () => {
       const data = await getAllProducts(1, 100);
+<<<<<<< HEAD
       setProducts(
         data?.products && Array.isArray(data.products) ? data.products : []
+=======
+      // Server DTO -> client model: variant prices are already numbers at
+      // runtime (serialized from Prisma.Decimal in the action).
+      setProducts(
+        data?.products && Array.isArray(data.products)
+          ? (data.products as unknown as Product[])
+          : []
+>>>>>>> client-release
       );
     };
     fetchAll();
@@ -131,9 +149,15 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
       if (userId) {
         if (Object.keys(localCart).length > 0) {
           localStorage.removeItem("rose_misk_cart");
+<<<<<<< HEAD
           await mergeCartAction(userId, localCart);
         }
         const result = await getUserCart(userId);
+=======
+          await mergeCartAction(localCart);
+        }
+        const result = await getUserCart();
+>>>>>>> client-release
         if (result.success) {
           setCartItems(result.cartData);
         }
@@ -162,12 +186,39 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
     return variant ? variant.price : 0;
   };
 
+<<<<<<< HEAD
   const addToCart = async (itemId: string | number, size: string) => {
     let cartData = structuredClone(cartItems);
     const idStr = String(itemId);
 
     if (cartData[idStr]) {
       cartData[idStr][size] = (cartData[idStr][size] || 0) + 1;
+=======
+  // Available stock for a variant, or null if the product/variant isn't loaded
+  // yet (in which case we don't block — the server still enforces stock).
+  const getVariantStock = (
+    productId: string | number,
+    size: string
+  ): number | null => {
+    const product = products.find((p) => String(p.id) === String(productId));
+    const variant = product?.variants.find((v) => v.volume === size);
+    return variant ? variant.stock : null;
+  };
+
+  const addToCart = async (itemId: string | number, size: string) => {
+    const idStr = String(itemId);
+    const currentQty = cartItems[idStr]?.[size] || 0;
+
+    // Don't let shoppers add more than what's physically in stock.
+    const stock = getVariantStock(itemId, size);
+    if (stock !== null && currentQty + 1 > stock) {
+      return;
+    }
+
+    let cartData = structuredClone(cartItems);
+    if (cartData[idStr]) {
+      cartData[idStr][size] = currentQty + 1;
+>>>>>>> client-release
     } else {
       cartData[idStr] = { [size]: 1 };
     }
@@ -175,7 +226,11 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
     setCartItems(cartData);
 
     if (userId) {
+<<<<<<< HEAD
       await updateCartInDB(userId, Number(itemId), size, cartData[idStr][size]);
+=======
+      await updateCartInDB(Number(itemId), size, cartData[idStr][size]);
+>>>>>>> client-release
     }
   };
 
@@ -186,20 +241,36 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
   ) => {
     let cartData = structuredClone(cartItems);
     const idStr = String(itemId);
+<<<<<<< HEAD
+=======
+    let finalQuantity = quantity;
+>>>>>>> client-release
 
     if (quantity <= 0) {
       if (cartData[idStr]) delete cartData[idStr][size];
       if (cartData[idStr] && Object.keys(cartData[idStr]).length === 0)
         delete cartData[idStr];
     } else {
+<<<<<<< HEAD
       if (!cartData[idStr]) cartData[idStr] = {};
       cartData[idStr][size] = quantity;
+=======
+      // Cap the requested quantity to the available stock.
+      const stock = getVariantStock(itemId, size);
+      finalQuantity = stock !== null ? Math.min(quantity, stock) : quantity;
+      if (!cartData[idStr]) cartData[idStr] = {};
+      cartData[idStr][size] = finalQuantity;
+>>>>>>> client-release
     }
 
     setCartItems(cartData);
 
     if (userId) {
+<<<<<<< HEAD
       await updateCartInDB(userId, Number(itemId), size, quantity);
+=======
+      await updateCartInDB(Number(itemId), size, finalQuantity);
+>>>>>>> client-release
     }
   };
 
@@ -213,11 +284,17 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
     return sum;
   }, [cartItems, products]);
 
+<<<<<<< HEAD
   const total = subtotal + delivery_fee;
 
   const fetchUserOrders = async () => {
     if (userId) {
       const result = await getUserOrders(userId);
+=======
+  const fetchUserOrders = async () => {
+    if (userId) {
+      const result = await getUserOrders();
+>>>>>>> client-release
       if (result.success && result.orders) {
         setUserOrders(result.orders);
       }
@@ -253,11 +330,15 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
       totalAmount: total,
     };
 
+<<<<<<< HEAD
     const result = await createOrder(
       userId || null,
       orderPayload,
       formattedItems
     );
+=======
+    const result = await createOrder(orderPayload, formattedItems);
+>>>>>>> client-release
 
     if (result.success) {
       setCartItems({});
@@ -278,7 +359,10 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
   const value = {
     products,
     currency,
+<<<<<<< HEAD
     delivery_fee,
+=======
+>>>>>>> client-release
     searchOpen,
     setSearchOpen,
     closeSearch: () => setSearchOpen(false),
@@ -293,7 +377,10 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
       return count;
     }, [cartItems]),
     goToCheckout: () => router.push("/placeorder"),
+<<<<<<< HEAD
     total,
+=======
+>>>>>>> client-release
     subtotal,
     placeOrder,
     userOrders,

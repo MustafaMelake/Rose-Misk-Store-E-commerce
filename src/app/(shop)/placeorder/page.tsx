@@ -8,6 +8,10 @@ import {
   ALL_GOVERNORATES,
   calculateShippingFee,
 } from "../../../../lib/shipping";
+<<<<<<< HEAD
+=======
+import { formatPrice } from "@/lib/format";
+>>>>>>> client-release
 
 interface CartItem {
   id: number;
@@ -37,6 +41,7 @@ const PlaceOrder: React.FC = () => {
 
   if (!context) return null;
 
+<<<<<<< HEAD
   const {
     cartItems,
     products,
@@ -45,6 +50,9 @@ const PlaceOrder: React.FC = () => {
     placeOrder,
     getPriceBySize,
   } = context;
+=======
+  const { cartItems, products, currency, placeOrder, getPriceBySize } = context;
+>>>>>>> client-release
 
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("COD");
@@ -259,7 +267,11 @@ const PlaceOrder: React.FC = () => {
             <div className="flex justify-between text-gray-500 dark:text-gray-400 text-sm">
               <span>Subtotal</span>
               <span>
+<<<<<<< HEAD
                 {currency} {subtotal.toFixed(2)}
+=======
+                {currency} {formatPrice(subtotal)}
+>>>>>>> client-release
               </span>
             </div>
             <div className="flex justify-between text-gray-500 dark:text-gray-400 text-sm">
@@ -267,14 +279,22 @@ const PlaceOrder: React.FC = () => {
               <span>
                 {dynamicDeliveryFee === 0
                   ? "اختر المحافظة"
+<<<<<<< HEAD
                   : `${currency} ${dynamicDeliveryFee.toFixed(2)}`}
+=======
+                  : `${currency} ${formatPrice(dynamicDeliveryFee)}`}
+>>>>>>> client-release
               </span>
             </div>
             <div className="h-[1px] bg-gray-100 dark:bg-zinc-800 my-2"></div>
             <div className="flex justify-between text-lg font-bold text-black dark:text-white">
               <span>Total</span>
               <span className="text-gold-base">
+<<<<<<< HEAD
                 {currency} {total.toFixed(2)}
+=======
+                {currency} {formatPrice(total)}
+>>>>>>> client-release
               </span>
             </div>
           </div>
@@ -287,7 +307,11 @@ const PlaceOrder: React.FC = () => {
           <div className="flex flex-col gap-3">
             <label
               className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
+<<<<<<< HEAD
                 paymentMethod === "cod"
+=======
+                paymentMethod === "COD"
+>>>>>>> client-release
                   ? "border-gold-base bg-gold-base/5"
                   : "border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800"
               }`}
@@ -296,13 +320,22 @@ const PlaceOrder: React.FC = () => {
                 <input
                   type="radio"
                   name="payment"
+<<<<<<< HEAD
                   checked={paymentMethod === "cod"}
                   onChange={() => setPaymentMethod("cod")}
+=======
+                  checked={paymentMethod === "COD"}
+                  onChange={() => setPaymentMethod("COD")}
+>>>>>>> client-release
                   className="accent-gold-base w-4 h-4"
                 />
                 <span className="font-medium text-sm">Cash On Delivery</span>
               </div>
+<<<<<<< HEAD
               {paymentMethod === "cod" && (
+=======
+              {paymentMethod === "COD" && (
+>>>>>>> client-release
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               )}
             </label>

@@ -28,7 +28,11 @@ async function getUsersData() {
   return users.map((user) => {
     const totalOrders = user.orders.length;
     const totalSpent = user.orders.reduce(
+<<<<<<< HEAD
       (sum, order) => sum + order.totalAmount,
+=======
+      (sum, order) => sum + Number(order.totalAmount),
+>>>>>>> client-release
       0
     );
 

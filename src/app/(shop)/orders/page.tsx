@@ -5,6 +5,10 @@ import Image from "next/image";
 import { ShopContext } from "../../../context/ShopContext";
 import Title from "../../../components/Title";
 import Footer from "@/components/Footer";
+<<<<<<< HEAD
+=======
+import { formatPrice } from "@/lib/format";
+>>>>>>> client-release
 
 interface OrderItem {
   id: string | number;
@@ -172,18 +176,30 @@ const Orders: React.FC = () => {
                           </div>
                           <p className="sm:hidden font-bold text-gold-base mt-1">
                             {currency}
+<<<<<<< HEAD
                             {item.price.toFixed(2)}
+=======
+                            {formatPrice(item.price)}
+>>>>>>> client-release
                           </p>
                         </div>
 
                         <div className="hidden sm:block text-right">
                           <p className="font-bold text-gold-base">
                             {currency}
+<<<<<<< HEAD
                             {item.price.toFixed(2)}
                           </p>
                           <p className="text-xs text-gray-400">
                             Subtotal: {currency}
                             {(item.price * item.quantity).toFixed(2)}
+=======
+                            {formatPrice(item.price)}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Subtotal: {currency}
+                            {formatPrice(item.price * item.quantity)}
+>>>>>>> client-release
                           </p>
                         </div>
                       </div>
@@ -214,7 +230,11 @@ const Orders: React.FC = () => {
                         order.shippingFee > 0 && (
                           <p className="text-xs text-gray-400">
                             Shipping Fee: {currency}
+<<<<<<< HEAD
                             {Number(order.shippingFee).toFixed(2)}
+=======
+                            {formatPrice(order.shippingFee ?? 0)}
+>>>>>>> client-release
                           </p>
                         )}
                       <div className="flex items-center gap-2">
@@ -223,7 +243,11 @@ const Orders: React.FC = () => {
                         </span>
                         <p className="font-bold text-xl text-black dark:text-white">
                           {currency}
+<<<<<<< HEAD
                           {Number(order.total || 0).toFixed(2)}
+=======
+                          {formatPrice(order.total ?? 0)}
+>>>>>>> client-release
                         </p>
                       </div>
                     </div>

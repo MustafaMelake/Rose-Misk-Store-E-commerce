@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { updateProduct } from "../../../lib/actions/product.actions";
+<<<<<<< HEAD
+=======
+import { UploadButton } from "../../../lib/uploadthing";
+>>>>>>> client-release
 
 export default function EditProductForm({ initialData }: { initialData: any }) {
   if (!initialData)
@@ -210,10 +214,18 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
             Media & Settings
           </h2>
 
+<<<<<<< HEAD
           <div className="space-y-3">
             <label className="text-sm font-medium dark:text-zinc-300">
               Product Image (URL)
             </label>
+=======
+          <div className="space-y-4">
+            <label className="text-sm font-medium dark:text-zinc-300">
+              Product Image
+            </label>
+
+>>>>>>> client-release
             <div className="flex gap-2">
               <input
                 type="text"
@@ -222,8 +234,50 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
                 onChange={(e) => setImages([e.target.value])}
                 className="flex-1 p-2 border dark:border-zinc-800 rounded-md bg-transparent dark:text-white outline-none focus:ring-1 focus:ring-gold-base"
               />
+<<<<<<< HEAD
             </div>
 
+=======
+              {images[0] !== "" && (
+                <button
+                  type="button"
+                  onClick={() => setImages([""])}
+                  className="text-red-500 p-2 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="my-4 border-t border-b dark:border-zinc-800 py-4">
+              <UploadButton
+                endpoint="productImage"
+                onClientUploadComplete={(res) => {
+                  if (res && res.length > 0) {
+                    setImages([res[0].url]);
+                    alert("تم الرفع بنجاح!");
+                  }
+                }}
+                onUploadError={(error: Error) => {
+                  alert(`حدث خطأ أثناء الرفع: ${error.message}`);
+                }}
+              />
+            </div>
+
+            {images[0] !== "" && (
+              <div className="relative w-32 h-32 mx-auto">
+                <img
+                  src={images[0]}
+                  alt="معاينة"
+                  className="w-full h-full object-cover rounded-md border dark:border-zinc-800"
+                />
+                <div className="absolute -top-2 -right-2 bg-gold-base text-white text-[10px] px-2 py-0.5 rounded-full shadow-lg">
+                  Main Image
+                </div>
+              </div>
+            )}
+
+>>>>>>> client-release
             <p className="text-[10px] text-zinc-500">
               Only one main image is allowed for this product.
             </p>

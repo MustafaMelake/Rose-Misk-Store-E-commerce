@@ -1,109 +1,81 @@
-<<<<<<< HEAD
 "use client";
 
-import React, { useContext, useEffect, useState, useMemo } from "react";
-import { useParams } from "next/navigation";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { ShopContext } from "../../../../context/ShopContext";
-import ProductItem from "../../../../components/ProductItem";
-import { renderStars } from "../../../../components/Stars";
+import { ShopContext } from "../context/ShopContext";
+import ProductItem from "./ProductItem";
+import { renderStars } from "./Stars";
 import Footer from "@/components/Footer";
-import { authClient } from "../../../../../lib/auth-client";
+import { authClient } from "../../lib/auth-client";
 import ReviewModal from "@/components/ReviewModal";
 import ProductReviews from "@/components/ProductReviews";
 
-interface ProductType {
+interface Variant {
+  id: number;
+  volume: string;
+  price: number;
+  stock: number;
+}
+
+export interface ProductDetail {
   id: number;
   name: string;
   images: string[];
   description: string;
-  price: number;
-  size: string[];
   company: string;
   rating: number;
-  reviews: number;
-  variants: { volume: string; price: number; stock: number }[];
-  category?: string;
-  Subcategory?: string;
+  reviewsCount: number;
+  variants: Variant[];
 }
 
-const Product: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+const ProductDetails: React.FC<{ product: ProductDetail }> = ({ product }) => {
   const context = useContext(ShopContext);
+  const { data: session } = authClient.useSession();
+  const currentUserId = session?.user?.id;
 
-  if (!context) return null;
-
-  const { products, currency, addToCart, getPriceBySize } = context;
-  const [productItem, setProductItem] = useState<ProductType | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
   const [added, setAdded] = useState<boolean>(false);
-
   const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
 
-  const { data: session } = authClient.useSession();
-  const currentUserId = session?.user?.id;
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+    }
+  }, [product.id]);
+
+  // Related products come from the grid data already loaded in ShopContext.
+  const relatedProducts = useMemo(() => {
+    const all = context?.products ?? [];
+    return all
+      .filter((p) => p.company === product.company && p.id !== product.id)
+      .slice(0, 4);
+  }, [context?.products, product.company, product.id]);
+
+  if (!context) return null;
+
+  const { currency, addToCart } = context;
+
+  const sizes = product.variants.map((v) => v.volume);
+  const defaultPrice = product.variants?.[0]?.price ?? 0;
+  const selectedVariant = product.variants.find(
+    (v) => v.volume === selectedSize
+  );
+  const currentPrice = selectedVariant ? selectedVariant.price : defaultPrice;
+  const isOutOfStock = selectedVariant
+    ? Number(selectedVariant.stock) <= 0
+    : false;
 
   const handleAdd = () => {
     if (!selectedSize) {
       setError("Please select a size first");
       return;
     }
-
-    if (productItem) {
-      addToCart(productItem.id, selectedSize);
-      setError("");
-      setAdded(true);
-      setTimeout(() => setAdded(false), 2000);
-    }
+    addToCart(product.id, selectedSize);
+    setError("");
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
-
-  useEffect(() => {
-    if (Array.isArray(products) && products.length > 0) {
-      const item = products.find((p) => Number(p.id) === Number(id));
-      if (item) {
-        const defaultPrice = item.variants?.[0]?.price || 0;
-
-        setProductItem({
-          ...item,
-          price: defaultPrice,
-          images: item.images || [],
-          company: item.company || "Rose Misk",
-          rating: (item as any).rating || 0,
-          reviews: (item as any).reviewsCount || 0,
-          size: item.variants ? item.variants.map((v: any) => v.volume) : [],
-        });
-        setSelectedSize(null);
-      }
-    }
-    if (typeof window !== "undefined") {
-      window.scrollTo(0, 0);
-    }
-  }, [id, products]);
-
-  const relatedProducts = useMemo(() => {
-    if (!productItem) return [];
-    return products
-      .filter(
-        (p: any) => p.company === productItem.company && p.id !== productItem.id
-      )
-      .slice(0, 4);
-  }, [products, productItem]);
-
-  if (!productItem) {
-    return (
-      <div className="py-20 text-center animate-pulse text-gray-500">
-        Loading exquisite fragrance...
-      </div>
-    );
-  }
-
-  const selectedVariant = productItem.variants?.find(
-    (v) => v.volume === selectedSize
-  );
-  const isOutOfStock = selectedVariant
-    ? Number(selectedVariant.stock) <= 0
-    : false;
 
   return (
     <>
@@ -113,8 +85,8 @@ const Product: React.FC = () => {
           <div className="w-full space-y-4">
             <div className="relative overflow-hidden rounded-3xl bg-gray-50 dark:bg-zinc-900 aspect-square">
               <Image
-                src={productItem.images?.[0] || "/placeholder.png"}
-                alt={productItem.name || "Product image"}
+                src={product.images?.[0] || "/placeholder.png"}
+                alt={product.name || "Product image"}
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover hover:scale-105 transition-transform duration-700"
@@ -126,20 +98,19 @@ const Product: React.FC = () => {
           {/* Right Side: Product Details */}
           <div className="flex flex-col">
             <p className="text-gold-base font-medium tracking-widest uppercase text-sm mb-2">
-              {productItem.company}
+              {product.company}
             </p>
             <h1 className="text-4xl prata-regular mb-4 dark:text-white">
-              {productItem.name}
+              {product.name}
             </h1>
 
-            {/* 🌟 3. تعديل منطقة التقييم لإضافة زرار "Write a Review" */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
               <div className="flex items-center gap-2">
-                {renderStars(productItem.rating)}
+                {renderStars(product.rating)}
                 <span className="text-gray-600 dark:text-zinc-400 font-medium text-sm">
-                  {productItem.rating.toFixed(1)}
+                  {product.rating.toFixed(1)}
                   <span className="ml-1 opacity-70">
-                    ({productItem.reviews})
+                    ({product.reviewsCount})
                   </span>
                 </span>
               </div>
@@ -163,7 +134,7 @@ const Product: React.FC = () => {
             <div className="h-[1px] bg-gray-100 dark:bg-zinc-800 w-full mb-6"></div>
 
             <p className="text-gray-600 dark:text-zinc-400 leading-relaxed mb-8 text-lg">
-              {productItem.description}
+              {product.description}
             </p>
 
             {/* Price Section */}
@@ -173,13 +144,10 @@ const Product: React.FC = () => {
               </p>
               <p className="text-4xl font-bold text-gold-base">
                 {currency}
-                {selectedSize
-                  ? (getPriceBySize(productItem.id, selectedSize) || 0).toFixed(
-                      2
-                    )
-                  : (productItem.price || 0).toFixed(2)}
+                {(currentPrice || 0).toFixed(2)}
               </p>
             </div>
+
             {/* Sizes Selection */}
             <div className="mb-10">
               <div className="flex justify-between items-center mb-4">
@@ -192,7 +160,6 @@ const Product: React.FC = () => {
                       {error}
                     </span>
                   )}
-                  {/* رسالة بتظهر لما يختار حجم خلصان */}
                   {isOutOfStock && (
                     <span className="text-red-500 text-xs font-bold animate-pulse">
                       OUT OF STOCK
@@ -201,9 +168,8 @@ const Product: React.FC = () => {
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                {productItem.size.map((s) => {
-                  // بنشوف لو الحجم ده نفسه خلصان عشان نديله شكل مختلف
-                  const variant = productItem.variants?.find(
+                {sizes.map((s) => {
+                  const variant = product.variants?.find(
                     (v) => v.volume === s
                   );
                   const isVariantOutOfStock = variant
@@ -221,7 +187,7 @@ const Product: React.FC = () => {
                         selectedSize === s
                           ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black shadow-lg"
                           : isVariantOutOfStock
-                          ? "border-gray-200 dark:border-zinc-800 text-gray-400 dark:text-zinc-600 cursor-not-allowed opacity-60 line-through" // شكل الحجم اللي خلصان
+                          ? "border-gray-200 dark:border-zinc-800 text-gray-400 dark:text-zinc-600 cursor-not-allowed opacity-60 line-through"
                           : "border-gray-100 dark:border-zinc-800 hover:border-gold-base dark:text-zinc-400 cursor-pointer"
                       }`}
                     >
@@ -253,20 +219,20 @@ const Product: React.FC = () => {
           </div>
         </div>
 
-        <ProductReviews productId={productItem.id} />
+        <ProductReviews productId={product.id} />
 
         {/* Recommended Section */}
         {relatedProducts.length > 0 && (
           <div className="mt-32">
             <div className="flex flex-col items-center mb-12">
               <h2 className="text-3xl prata-regular mb-2 dark:text-white">
-                More from {productItem.company}
+                More from {product.company}
               </h2>
               <div className="w-20 h-1 bg-gold-base"></div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {relatedProducts.map((p: any) => (
+              {relatedProducts.map((p) => (
                 <ProductItem
                   key={p.id}
                   id={p.id}
@@ -283,9 +249,9 @@ const Product: React.FC = () => {
 
       {currentUserId && (
         <ReviewModal
-          productId={productItem.id}
+          productId={product.id}
           userId={currentUserId}
-          productName={productItem.name}
+          productName={product.name}
           isOpen={isReviewModalOpen}
           onClose={() => setIsReviewModalOpen(false)}
         />
@@ -296,26 +262,4 @@ const Product: React.FC = () => {
   );
 };
 
-export default Product;
-=======
-import { notFound } from "next/navigation";
-import { getProductById } from "../../../../../lib/actions/product.actions";
-import ProductDetails, { ProductDetail } from "@/components/ProductDetails";
-
-export default async function ProductPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const result = await getProductById(id);
-
-  if (!result.success || !result.data) {
-    notFound();
-  }
-
-  // Server DTO -> client model. Variant prices are already numbers at runtime
-  // (serialized from Prisma.Decimal inside getProductById).
-  return <ProductDetails product={result.data as unknown as ProductDetail} />;
-}
->>>>>>> client-release
+export default ProductDetails;

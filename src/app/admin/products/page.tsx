@@ -1,9 +1,16 @@
 // src/app/admin/products/page.tsx
 import Link from "next/link";
+<<<<<<< HEAD
 import Image from "next/image";
 import { Plus, Edit, Star } from "lucide-react";
 import { getAdminProducts } from "../../../../lib/actions/product.actions";
 import DeleteProductButton from "../../../components/admin/DeleteProductButton";
+=======
+import { Plus } from "lucide-react";
+import { getAdminProducts } from "../../../../lib/actions/product.actions";
+import ProductsTable from "../../../components/admin/ProductsTable";
+
+>>>>>>> client-release
 export default async function AdminProductsPage() {
   const { success, data: products, error } = await getAdminProducts();
 
@@ -24,6 +31,7 @@ export default async function AdminProductsPage() {
         </Link>
       </div>
 
+<<<<<<< HEAD
       <div className="bg-white dark:bg-zinc-950 border dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -107,6 +115,9 @@ export default async function AdminProductsPage() {
           </table>
         </div>
       </div>
+=======
+      <ProductsTable products={products ?? []} />
+>>>>>>> client-release
     </div>
   );
 }

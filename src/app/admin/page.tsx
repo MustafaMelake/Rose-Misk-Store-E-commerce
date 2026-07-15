@@ -33,11 +33,24 @@ export default async function AdminDashboard() {
       createdAt: {
         gte: new Date(new Date().setMonth(new Date().getMonth() - 6)),
       },
+<<<<<<< HEAD
       status: { in: ["SHIPPED", "DELIVERED"] }, 
+=======
+      status: { in: ["SHIPPED", "DELIVERED"] },
+>>>>>>> client-release
     },
     select: { totalAmount: true, createdAt: true },
   });
 
+<<<<<<< HEAD
+=======
+  // Serialize Decimal -> number before handing data to a client component.
+  const chartOrders = rawOrders.map((o) => ({
+    totalAmount: Number(o.totalAmount),
+    createdAt: o.createdAt,
+  }));
+
+>>>>>>> client-release
   return (
     <div className="flex-1 space-y-6 p-6 pt-2">
       <div className="flex items-center justify-between">
@@ -55,7 +68,11 @@ export default async function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Revenue"
+<<<<<<< HEAD
           value={`${totalRevenue._sum.totalAmount?.toLocaleString() || 0} EGP`}
+=======
+          value={`${Number(totalRevenue._sum.totalAmount ?? 0).toLocaleString()} EGP`}
+>>>>>>> client-release
           icon={<DollarSign className="h-4 w-4 text-gold-500" />}
           description="Confirmed earnings (Shipped & Delivered)"
         />
@@ -98,7 +115,11 @@ export default async function AdminDashboard() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="h-[450px]">
+<<<<<<< HEAD
               <RevenueChart orders={rawOrders} />
+=======
+              <RevenueChart orders={chartOrders} />
+>>>>>>> client-release
             </div>
           </CardContent>
         </Card>

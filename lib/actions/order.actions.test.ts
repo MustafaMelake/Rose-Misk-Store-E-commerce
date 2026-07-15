@@ -6,7 +6,11 @@ import {
   updateOrderStatus,
 } from "./order.actions";
 import { prisma } from "../prisma";
+<<<<<<< HEAD
 import { auth } from "../auth";
+=======
+import { requireAdmin, AuthError } from "@/lib/auth-guards";
+>>>>>>> client-release
 import { revalidatePath } from "next/cache";
 
 // 1. Mock Prisma and $transaction
@@ -18,12 +22,20 @@ vi.mock("../prisma", () => ({
     productVariant: {
       findFirst: vi.fn(),
       update: vi.fn(),
+<<<<<<< HEAD
+=======
+      updateMany: vi.fn(),
+>>>>>>> client-release
     },
     order: {
       create: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
+<<<<<<< HEAD
+=======
+      updateMany: vi.fn(),
+>>>>>>> client-release
     },
     cartItem: {
       deleteMany: vi.fn(),
@@ -31,6 +43,7 @@ vi.mock("../prisma", () => ({
   },
 }));
 
+<<<<<<< HEAD
 // 2. Mock Auth (Better-Auth / NextAuth)
 vi.mock("../auth", () => ({
   auth: {
@@ -45,11 +58,33 @@ vi.mock("next/headers", () => ({
   headers: vi.fn(() => new Headers()),
 }));
 
+=======
+// 2. Mock the auth guards — identity/authorization is derived server-side.
+vi.mock("@/lib/auth-guards", () => {
+  class PublicError extends Error {}
+  class AuthError extends PublicError {}
+  return {
+    PublicError,
+    AuthError,
+    getCurrentUser: vi.fn(async () => ({ id: "user_123", role: "USER" })),
+    requireUser: vi.fn(async () => ({ id: "user_123", role: "USER" })),
+    requireAdmin: vi.fn(async () => ({ id: "admin_1", role: "ADMIN" })),
+    toPublicMessage: (e: any, fb = "An unexpected error occurred.") =>
+      e instanceof PublicError ? e.message : fb,
+  };
+});
+
+// 3. Mock Next.js Cache
+>>>>>>> client-release
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+<<<<<<< HEAD
 // 4. Mock ملف الشحن لضمان عزل دالة الفحص (Unit Isolation) أو استخدام قيم افتراضية متوقعة
+=======
+// 4. Mock shipping to isolate the fee calculation
+>>>>>>> client-release
 vi.mock("../../lib/shipping", () => ({
   calculateShippingFee: vi.fn((gov) => {
     if (gov === "القاهرة") return 75;
@@ -66,12 +101,19 @@ describe("Order Server Actions", () => {
   });
 
   describe("createOrder", () => {
+<<<<<<< HEAD
     // تحديث الموك داتا ليشمل حقل المحافظة الجديد
+=======
+>>>>>>> client-release
     const mockOrderData = {
       customerName: "John Doe",
       customerEmail: "john@example.com",
       customerPhone: "123456789",
+<<<<<<< HEAD
       governorate: "القاهرة", // المحافظة المضافة
+=======
+      governorate: "القاهرة",
+>>>>>>> client-release
       address: "123 Main St",
       paymentMethod: "COD",
     };
@@ -79,7 +121,11 @@ describe("Order Server Actions", () => {
     const mockItems = [{ id: 1, size: "50ml", quantity: 2 }];
 
     it("should successfully create an order and clear the cart", async () => {
+<<<<<<< HEAD
       // Arrange: موك للمنتج بسعر 100 ومخزون كافي
+=======
+      // Arrange: variant priced at 100 with enough stock
+>>>>>>> client-release
       (prisma.productVariant.findFirst as any).mockResolvedValue({
         id: 99,
         productId: 1,
@@ -87,17 +133,28 @@ describe("Order Server Actions", () => {
         price: 100,
         stock: 5,
       });
+<<<<<<< HEAD
 
       (prisma.order.create as any).mockResolvedValue({ id: 1001 });
 
       // Act
       const result = await createOrder(mockUserId, mockOrderData, mockItems);
+=======
+      // Atomic decrement succeeds (one row affected)
+      (prisma.productVariant.updateMany as any).mockResolvedValue({ count: 1 });
+
+      (prisma.order.create as any).mockResolvedValue({ id: 1001 });
+
+      // Act — userId is derived from the session, not passed by the client
+      const result = await createOrder(mockOrderData, mockItems);
+>>>>>>> client-release
 
       // Assert
       expect(prisma.productVariant.findFirst).toHaveBeenCalledWith({
         where: { productId: 1, volume: "50ml" },
       });
 
+<<<<<<< HEAD
       expect(prisma.productVariant.update).toHaveBeenCalledWith({
         where: { id: 99 },
         data: { stock: { decrement: 2 } },
@@ -114,6 +171,27 @@ describe("Order Server Actions", () => {
           userId: mockUserId,
         }),
       });
+=======
+      // Atomic, conditional decrement (stock guard lives in the where clause)
+      expect(prisma.productVariant.updateMany).toHaveBeenCalledWith({
+        where: { id: 99, stock: { gte: 2 } },
+        data: { stock: { decrement: 2 } },
+      });
+
+      const callArgs = (prisma.order.create as any).mock.calls[0][0];
+      expect(callArgs.data).toEqual(
+        expect.objectContaining({
+          customerName: "John Doe",
+          governorate: "القاهرة",
+          status: "PENDING",
+          userId: mockUserId,
+        })
+      );
+      // Money is stored as Decimal; compare numeric value
+      // (2 * 100) + shipping (75) = 275
+      expect(Number(callArgs.data.shippingFee)).toBe(75);
+      expect(Number(callArgs.data.totalAmount)).toBe(275);
+>>>>>>> client-release
 
       expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({
         where: { userId: mockUserId },
@@ -123,6 +201,7 @@ describe("Order Server Actions", () => {
       expect(result).toEqual({ success: true, orderId: 1001 });
     });
 
+<<<<<<< HEAD
     it("should fail if product variant does not exist or stock is insufficient", async () => {
       // Arrange
       (prisma.productVariant.findFirst as any).mockResolvedValue({
@@ -132,12 +211,43 @@ describe("Order Server Actions", () => {
 
       // Act
       const result = await createOrder(mockUserId, mockOrderData, mockItems);
+=======
+    it("should fail if the atomic stock decrement affects no rows", async () => {
+      // Arrange
+      (prisma.productVariant.findFirst as any).mockResolvedValue({
+        id: 99,
+        price: 100,
+        stock: 1,
+      });
+      // Conditional decrement matched nothing -> insufficient stock
+      (prisma.productVariant.updateMany as any).mockResolvedValue({ count: 0 });
+
+      // Act
+      const result = await createOrder(mockOrderData, mockItems);
+>>>>>>> client-release
 
       // Assert
       expect(result.success).toBe(false);
       expect(result.message).toContain("غير متوفر بالكمية المطلوبة");
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
+<<<<<<< HEAD
+=======
+
+    it("should reject CARD payments while no gateway is configured", async () => {
+      // Act
+      const result = await createOrder(
+        { ...mockOrderData, paymentMethod: "CARD" },
+        mockItems
+      );
+
+      // Assert — rejected before any DB work
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("Card payments are not available");
+      expect(prisma.productVariant.updateMany).not.toHaveBeenCalled();
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+>>>>>>> client-release
   });
 
   describe("getUserOrders", () => {
@@ -151,8 +261,13 @@ describe("Order Server Actions", () => {
           status: "DELIVERED",
           paymentMethod: "CARD",
           totalAmount: 575,
+<<<<<<< HEAD
           shippingFee: 75, // حقل مضاف لقاعدة البيانات
           governorate: "القاهرة", // حقل مضاف لقاعدة البيانات
+=======
+          shippingFee: 75,
+          governorate: "القاهرة",
+>>>>>>> client-release
           items: [
             {
               productId: 10,
@@ -166,24 +281,38 @@ describe("Order Server Actions", () => {
       ]);
 
       // Act
+<<<<<<< HEAD
       const result = await getUserOrders(mockUserId);
+=======
+      const result = await getUserOrders();
+>>>>>>> client-release
 
       // Assert
       expect(result.success).toBe(true);
       expect(result.orders![0].id).toBe(1);
       expect(result.orders![0].status).toBe("DELIVERED");
+<<<<<<< HEAD
       expect(result.orders![0].shippingFee).toBe(75); // فحص تسليم قيمة الشحن للفرونت
       expect(result.orders![0].governorate).toBe("القاهرة"); // فحص تسليم اسم المحافظة للفرونت
       expect(result.orders![0].items[0].name).toBe("Perfume A");
+=======
+      expect(result.orders![0].shippingFee).toBe(75);
+      expect(result.orders![0].governorate).toBe("القاهرة");
+      expect(result.orders![0].items[0].name).toBe("Perfume A");
+      expect(result.orders![0].items[0].price).toBe(500);
+>>>>>>> client-release
     });
   });
 
   describe("getAllOrders (Admin)", () => {
     it("should return orders if user is ADMIN", async () => {
       // Arrange
+<<<<<<< HEAD
       (auth.api.getSession as any).mockResolvedValue({
         user: { role: "ADMIN" },
       });
+=======
+>>>>>>> client-release
       (prisma.order.findMany as any).mockResolvedValue([{ id: 1 }, { id: 2 }]);
 
       // Act
@@ -195,10 +324,17 @@ describe("Order Server Actions", () => {
     });
 
     it("should return unauthorized if user is not ADMIN or not logged in", async () => {
+<<<<<<< HEAD
       // Arrange
       (auth.api.getSession as any).mockResolvedValue({
         user: { role: "USER" },
       });
+=======
+      // Arrange: the admin guard rejects
+      vi.mocked(requireAdmin).mockRejectedValueOnce(
+        new AuthError("Unauthorized: admin privileges are required.")
+      );
+>>>>>>> client-release
 
       // Act
       const result = await getAllOrders();
@@ -211,12 +347,17 @@ describe("Order Server Actions", () => {
   });
 
   describe("updateOrderStatus", () => {
+<<<<<<< HEAD
     it("should update status and increment stock if status changed to CANCELLED", async () => {
       // Arrange
       (auth.api.getSession as any).mockResolvedValue({
         user: { role: "ADMIN" },
       });
 
+=======
+    it("should atomically cancel and restock when transitioning to CANCELLED", async () => {
+      // Arrange
+>>>>>>> client-release
       const existingOrder = {
         id: 5,
         status: "PENDING",
@@ -224,11 +365,18 @@ describe("Order Server Actions", () => {
       };
 
       (prisma.order.findUnique as any).mockResolvedValue(existingOrder);
+<<<<<<< HEAD
       (prisma.productVariant.findFirst as any).mockResolvedValue({ id: 99 });
+=======
+      // The atomic flip to CANCELLED performed exactly one row
+      (prisma.order.updateMany as any).mockResolvedValue({ count: 1 });
+      (prisma.productVariant.updateMany as any).mockResolvedValue({ count: 1 });
+>>>>>>> client-release
 
       // Act
       const result = await updateOrderStatus(5, "CANCELLED");
 
+<<<<<<< HEAD
       // Assert
       expect(prisma.order.update).toHaveBeenCalledWith({
         where: { id: 5 },
@@ -237,6 +385,17 @@ describe("Order Server Actions", () => {
 
       expect(prisma.productVariant.update).toHaveBeenCalledWith({
         where: { id: 99 },
+=======
+      // Assert: atomic conditional status flip
+      expect(prisma.order.updateMany).toHaveBeenCalledWith({
+        where: { id: 5, status: { not: "CANCELLED" } },
+        data: { status: "CANCELLED" },
+      });
+
+      // Restock via atomic increment (keyed by productId + volume)
+      expect(prisma.productVariant.updateMany).toHaveBeenCalledWith({
+        where: { productId: 1, volume: "50ml" },
+>>>>>>> client-release
         data: { stock: { increment: 2 } },
       });
 
@@ -246,10 +405,13 @@ describe("Order Server Actions", () => {
 
     it("should just update status without touching stock if status is NOT CANCELLED", async () => {
       // Arrange
+<<<<<<< HEAD
       (auth.api.getSession as any).mockResolvedValue({
         user: { role: "ADMIN" },
       });
 
+=======
+>>>>>>> client-release
       (prisma.order.findUnique as any).mockResolvedValue({
         id: 5,
         status: "PENDING",
@@ -265,8 +427,32 @@ describe("Order Server Actions", () => {
         data: { status: "SHIPPED" },
       });
 
+<<<<<<< HEAD
       expect(prisma.productVariant.update).not.toHaveBeenCalled();
       expect(result.success).toBe(true);
     });
+=======
+      expect(prisma.productVariant.updateMany).not.toHaveBeenCalled();
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject an invalid transition out of a terminal state", async () => {
+      // Arrange: order already delivered (terminal)
+      (prisma.order.findUnique as any).mockResolvedValue({
+        id: 5,
+        status: "DELIVERED",
+        items: [],
+      });
+
+      // Act
+      const result = await updateOrderStatus(5, "SHIPPED");
+
+      // Assert: no writes, clear rejection
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("Cannot change order status");
+      expect(prisma.order.update).not.toHaveBeenCalled();
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
+    });
+>>>>>>> client-release
   });
 });

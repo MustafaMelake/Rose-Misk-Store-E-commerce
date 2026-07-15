@@ -74,7 +74,10 @@ const TestComponent = () => {
     <div>
       <div data-testid="cart-count">{context.getCartCount}</div>
       <div data-testid="subtotal">{context.subtotal}</div>
+<<<<<<< HEAD
       <div data-testid="total">{context.total}</div>
+=======
+>>>>>>> client-release
       <button
         data-testid="add-btn"
         onClick={() => context.addToCart(1, "50ml")}
@@ -127,7 +130,10 @@ describe("ShopContextProvider", () => {
     });
 
     expect(screen.getByTestId("subtotal").textContent).toBe("0");
+<<<<<<< HEAD
     expect(screen.getByTestId("total").textContent).toBe("80");
+=======
+>>>>>>> client-release
   });
 
   it("should update local state and localStorage when adding items (Guest User)", async () => {
@@ -151,7 +157,10 @@ describe("ShopContextProvider", () => {
 
     expect(screen.getByTestId("cart-count").textContent).toBe("1");
     expect(screen.getByTestId("subtotal").textContent).toBe("100");
+<<<<<<< HEAD
     expect(screen.getByTestId("total").textContent).toBe("180");
+=======
+>>>>>>> client-release
 
     const savedCart = JSON.parse(
       localStorage.getItem("rose_misk_cart") || "{}"
@@ -174,7 +183,11 @@ describe("ShopContextProvider", () => {
     );
 
     await waitFor(() => {
+<<<<<<< HEAD
       expect(getUserCart).toHaveBeenCalledWith("user_vibe_123");
+=======
+      expect(getUserCart).toHaveBeenCalledWith();
+>>>>>>> client-release
     });
 
     const addBtn = screen.getByTestId("add-btn");
@@ -183,7 +196,11 @@ describe("ShopContextProvider", () => {
       fireEvent.click(addBtn);
     });
 
+<<<<<<< HEAD
     expect(updateCartInDB).toHaveBeenCalledWith("user_vibe_123", 1, "50ml", 1);
+=======
+    expect(updateCartInDB).toHaveBeenCalledWith(1, "50ml", 1);
+>>>>>>> client-release
   });
 
   it("should merge local cart into DB cart upon login if local cart has items", async () => {
@@ -208,7 +225,11 @@ describe("ShopContextProvider", () => {
     );
 
     await waitFor(() => {
+<<<<<<< HEAD
       expect(mergeCartAction).toHaveBeenCalledWith("user_vibe_123", {
+=======
+      expect(mergeCartAction).toHaveBeenCalledWith({
+>>>>>>> client-release
         "1": { "100ml": 2 },
       });
       expect(localStorage.getItem("rose_misk_cart")).toBeNull();
