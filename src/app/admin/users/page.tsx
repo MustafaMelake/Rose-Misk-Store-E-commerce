@@ -8,7 +8,7 @@ import {
   Shield,
 } from "lucide-react";
 import { requireAdmin } from "@/lib/auth-guards";
-import { getAdminUsers } from "../../../../lib/actions/user.actions";
+import { getAdminUsers } from "@/lib/actions/user.actions";
 
 export default async function AdminUsersPage() {
   // Defense in depth: guard at the top of the page, independent of the layout.

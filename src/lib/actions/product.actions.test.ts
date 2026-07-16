@@ -13,11 +13,11 @@ import {
   getInventoryProducts,
   getTopSellingProducts,
 } from "./product.actions";
-import { prisma } from "../prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 // 1. ✨ Mock Prisma
-vi.mock("../prisma", () => ({
+vi.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: vi.fn(async (callback) => {
       return await callback(prisma);
@@ -96,8 +96,8 @@ describe("Product Server Actions", () => {
       name: "Luxury Perfume",
       description: "A great scent",
       company: "BrandX",
-      images: ["img1.jpg"],
-      rating: 5,
+      images: ["https://utfs.io/f/test-image-1"],
+      rating: 5, // present but should be ignored (server-computed)
       isFeatured: true,
       categoryId: 2,
       slug: "",
@@ -397,6 +397,7 @@ describe("Product Server Actions", () => {
 
       expect(prisma.orderItem.groupBy).toHaveBeenCalledWith({
         by: ["productId"],
+        where: { order: { status: { in: ["PAID", "SHIPPED", "DELIVERED"] } } },
         _sum: { quantity: true },
         orderBy: { _sum: { quantity: "desc" } },
         take: 5,

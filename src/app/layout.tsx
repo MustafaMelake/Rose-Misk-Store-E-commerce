@@ -3,7 +3,7 @@ import ShopContextProvider from "../context/ShopContext";
 import { ThemeProvider } from "../components/ThemeContext";
 import { Metadata } from "next";
 import GuestWelcomeBanner from "@/components/GuestWelcomeBanner";
-import { auth } from "../../lib/auth";
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
 export const metadata: Metadata = {

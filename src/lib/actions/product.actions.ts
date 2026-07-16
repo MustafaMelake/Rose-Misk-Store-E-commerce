@@ -1,9 +1,16 @@
 "use server";
 
-import { prisma } from "../prisma";
+import { OrderStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requireAdmin, PublicError, toPublicMessage } from "@/lib/auth-guards";
-import type { ProductUpdateInput } from "../validations";
+import { productCreateSchema, productUpdateSchema } from "@/lib/validations";
+
+/**
+ * Order statuses that count toward realized sales/revenue. PENDING and
+ * AWAITING_PAYMENT (not paid yet) and CANCELLED are excluded.
+ */
+const REVENUE_STATUSES: OrderStatus[] = ["PAID", "SHIPPED", "DELIVERED"];
 
 /**
  * Serialize a product's variant prices from Prisma.Decimal to plain numbers
@@ -42,20 +49,22 @@ export async function getAdminProducts() {
   }
 }
 
-export async function createProduct(data: {
-  name: string;
-  description: string;
-  company: string;
-  images: string[];
-  rating: number;
-  isFeatured: boolean;
-  categoryId?: number;
-  subcategory?: string;
-  slug: string;
-  variants: { volume: string; price: number; stock: number }[];
-}) {
+export async function createProduct(input: unknown) {
   try {
     await requireAdmin();
+
+    // Validate the untrusted admin payload: non-negative 2dp prices, integer
+    // stock, unique variant volumes, UploadThing-hosted image URLs. `rating` is
+    // deliberately NOT accepted — it is computed from approved reviews only.
+    const parsed = productCreateSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0]?.message ?? "بيانات المنتج غير صالحة.",
+      };
+    }
+    const data = parsed.data;
+
     const generatedSlug =
       data.name
         .toLowerCase()
@@ -69,16 +78,16 @@ export async function createProduct(data: {
         description: data.description,
         company: data.company,
         images: data.images,
-        rating: Number(data.rating) || 5,
+        // rating omitted — server-computed from approved reviews (DB default 0).
         isFeatured: data.isFeatured,
         subcategory: data.subcategory,
-        categoryId: data.categoryId ? Number(data.categoryId) : undefined,
+        categoryId: data.categoryId ?? undefined,
         slug: generatedSlug,
         variants: {
-          create: data.variants.map((v: any) => ({
+          create: data.variants.map((v) => ({
             volume: v.volume,
-            price: Number(v.price),
-            stock: Number(v.stock),
+            price: v.price,
+            stock: v.stock,
           })),
         },
       },
@@ -148,24 +157,25 @@ export async function getProductById(id: string) {
   }
 }
 
-export async function updateProduct(id: number, data: ProductUpdateInput) {
+export async function updateProduct(id: number, input: unknown) {
   try {
     await requireAdmin();
     if (isNaN(id)) throw new PublicError("Invalid Product ID");
 
-    let parsedCategoryId: number | null | undefined = undefined;
-
-    if (data.categoryId) {
-      const num = Number(data.categoryId);
-      if (isNaN(num)) {
-        throw new PublicError("Invalid Category ID format");
-      }
-      parsedCategoryId = num;
-    } else if (data.categoryId === null || data.categoryId === "") {
-      parsedCategoryId = null;
+    // Same validation as create (prices, stock, unique volumes, image hosts).
+    const parsed = productUpdateSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0]?.message ?? "بيانات المنتج غير صالحة.",
+      };
     }
+    const data = parsed.data;
 
-    const variantInputs = data.variants ?? [];
+    // undefined => leave category unchanged; null => disconnect; number => set.
+    const parsedCategoryId = data.categoryId;
+
+    const variantInputs = data.variants;
 
     const updatedProduct = await prisma.$transaction(async (tx) => {
       // Update scalar product fields.
@@ -176,7 +186,7 @@ export async function updateProduct(id: number, data: ProductUpdateInput) {
           description: data.description,
           company: data.company,
           images: data.images,
-          isFeatured: Boolean(data.isFeatured),
+          isFeatured: data.isFeatured ?? undefined,
           subcategory: data.subcategory ?? undefined,
           categoryId: parsedCategoryId,
         },
@@ -187,12 +197,12 @@ export async function updateProduct(id: number, data: ProductUpdateInput) {
       for (const v of variantInputs) {
         await tx.productVariant.upsert({
           where: { productId_volume: { productId: id, volume: v.volume } },
-          update: { price: Number(v.price), stock: Number(v.stock) },
+          update: { price: v.price, stock: v.stock },
           create: {
             productId: id,
             volume: v.volume,
-            price: Number(v.price),
-            stock: Number(v.stock),
+            price: v.price,
+            stock: v.stock,
           },
         });
       }
@@ -253,12 +263,17 @@ export async function getLatestProducts() {
 }
 
 export async function getAllProducts(page: number = 1, limit: number = 12) {
+  // Clamp untrusted pagination: page >= 1, 1 <= limit <= 48, so a caller can't
+  // request an unbounded page size.
+  const safePage = Math.max(1, Math.floor(Number(page) || 1));
+  const safeLimit = Math.min(48, Math.max(1, Math.floor(Number(limit) || 12)));
+
   try {
-    const skip = (page - 1) * limit;
+    const skip = (safePage - 1) * safeLimit;
     const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         skip: skip,
-        take: limit,
+        take: safeLimit,
         include: {
           variants: true,
           category: {
@@ -275,24 +290,28 @@ export async function getAllProducts(page: number = 1, limit: number = 12) {
     return {
       products: products.map(serializeProduct),
       totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      currentPage: page,
+      totalPages: Math.ceil(totalCount / safeLimit),
+      currentPage: safePage,
     };
   } catch (error) {
     console.error("Error fetching all products:", error);
-    return { products: [], totalCount: 0, totalPages: 0, currentPage: page };
+    return { products: [], totalCount: 0, totalPages: 0, currentPage: safePage };
   }
 }
 
 export async function searchProducts(query: string) {
   if (!query || query.trim() === "") return [];
 
+  // Clamp the query to 100 chars so a huge string can't drive an expensive
+  // scan (resource exhaustion).
+  const q = query.trim().slice(0, 100);
+
   try {
     const products = await prisma.product.findMany({
       where: {
         OR: [
-          { name: { contains: query, mode: "insensitive" } },
-          { description: { contains: query, mode: "insensitive" } },
+          { name: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
         ],
       },
       take: 8,
@@ -313,8 +332,11 @@ export async function searchProducts(query: string) {
 export async function getTopSellingProducts() {
   try {
     await requireAdmin();
+    // Only count units/revenue from orders that were actually paid/fulfilled —
+    // PENDING/AWAITING_PAYMENT and CANCELLED orders are excluded.
     const topSellersGrouping = await prisma.orderItem.groupBy({
       by: ["productId"],
+      where: { order: { status: { in: REVENUE_STATUSES } } },
       _sum: {
         quantity: true,
       },
@@ -342,7 +364,10 @@ export async function getTopSellingProducts() {
     });
 
     const orderItemsForRevenue = await prisma.orderItem.findMany({
-      where: { productId: { in: productIds } },
+      where: {
+        productId: { in: productIds },
+        order: { status: { in: REVENUE_STATUSES } },
+      },
       select: { productId: true, quantity: true, price: true },
     });
 

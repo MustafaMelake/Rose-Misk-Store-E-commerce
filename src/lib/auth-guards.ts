@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { headers } from "next/headers";
-import { auth } from "../../lib/auth";
+import { auth } from "@/lib/auth";
 
 /**
  * An error whose `message` is safe to surface directly to the client.

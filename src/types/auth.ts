@@ -1,4 +1,4 @@
-import type { auth } from "../../lib/auth";
+import type { auth } from "@/lib/auth";
 
 /**
  * Session shape inferred directly from the Better Auth server config

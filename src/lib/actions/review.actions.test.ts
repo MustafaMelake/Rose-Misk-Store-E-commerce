@@ -6,11 +6,11 @@ import {
   getPendingReviews,
   getApprovedProductReviews,
 } from "./review.actions"; // Adjust the path if necessary
-import { prisma } from "../prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 // 1. Mock Prisma and Transaction
-vi.mock("../prisma", () => ({
+vi.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: vi.fn(async (callback) => {
       return await callback(prisma);
@@ -81,6 +81,25 @@ describe("Review Server Actions", () => {
       });
       expect(result.success).toBe(true);
       expect(result.message).toContain("pending admin approval");
+    });
+
+    it("should store a null comment when none is provided (nullable comment)", async () => {
+      // The reviewer is eligible; they submit a rating with no comment.
+      (prisma.order.findFirst as any).mockResolvedValue({ id: "order_1" });
+      (prisma.review.create as any).mockResolvedValue({ id: "rev_2" });
+
+      const result = await submitReview({ productId: 1, rating: 4 });
+
+      expect(prisma.review.create).toHaveBeenCalledWith({
+        data: {
+          productId: 1,
+          userId: "user_123",
+          rating: 4,
+          comment: null,
+          status: "PENDING",
+        },
+      });
+      expect(result.success).toBe(true);
     });
 
     it("should return an error if rating is less than 1 or greater than 5", async () => {

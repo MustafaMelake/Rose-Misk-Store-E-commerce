@@ -5,7 +5,7 @@ import { ShopContext } from "../../../context/ShopContext";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import Title from "../../../components/Title";
 import ProductItem from "../../../components/ProductItem";
-import { getCategories } from "../../../../lib/actions/category.actions";
+import { getCategories } from "@/lib/actions/category.actions";
 
 const Fragrances: React.FC = () => {
   const context = useContext(ShopContext);

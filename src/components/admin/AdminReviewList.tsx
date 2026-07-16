@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   approveReview,
   declineReview,
-} from "../../../lib/actions/review.actions";
+} from "@/lib/actions/review.actions";
 import Image from "next/image";
 import { renderStars } from "@/components/Stars";
 

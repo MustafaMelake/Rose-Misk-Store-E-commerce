@@ -143,38 +143,38 @@ Every exported function in a `"use server"` file is a **publicly invokable POST 
 
 ### Phase 3 — Server Actions & Business Logic
 
-- [ ] **Fix the review bug:** `comment: comment?.trim() || null` is valid once `Review.comment` is nullable (Phase 1); add a regression test for a comment-less review
-- [ ] **Zod-validate every mutating action** (extend `lib/validations.ts`, honoring its doc comment):
-  - [ ] `reviewInputSchema`: `productId` positive int, `rating` **int** 1–5, `comment` trimmed, max ~2000 chars, optional
-  - [ ] `cartUpdateSchema`: `productId` positive int, `size` 1–50 chars, `quantity` int 0–`MAX_CART_QTY` (e.g. 20)
-  - [ ] `cartMergeSchema`: record-shape validation + per-item clamp; wrap `mergeCartAction` in a single `$transaction`, cap post-merge quantity
-  - [ ] `variantInputSchema`: `volume` non-empty ≤ 30 chars, `price` coerced decimal string, `>= 0`, ≤ 99,999,999.99, 2dp; `stock` int ≥ 0; **dedupe volumes** in payload
-  - [ ] `productCreateSchema` / `productUpdateSchema` from the variant schema; validate `images` are HTTPS URLs on the allowed UploadThing hosts (`utfs.io`, `*.ufs.sh`)
-- [ ] Remove `rating` from `createProduct` input entirely (server-computed from approved reviews only) — kills the `|| 5` bug
-- [ ] `getCategories`: return `toPublicMessage(error, …)` instead of raw `error.message`
-- [ ] `getTopSellingProducts`: filter revenue/quantity to fulfilled statuses (`order: { status: { in: [PAID, SHIPPED, DELIVERED] } }` — decide exact set); add test
-- [ ] Clamp `getAllProducts` (`limit` ≤ 48, `page` ≥ 1) and `searchProducts` (query ≤ 100 chars)
-- [ ] Validate `governorate` with `z.enum(ALL_GOVERNORATES)` (single source of truth from `lib/shipping.ts`)
-- [ ] Use `variantId` (Phase 1) in `createOrder` decrement + cancel-restock; **log/alert when a restock `updateMany` returns `count === 0`** instead of ignoring it
-- [ ] Decide + implement: `createOrder` deletes only the **ordered** cart items (or keep clear-all as explicit product decision)
-- [ ] Normalize duplicate `(id, size)` entries in the order payload (merge quantities) before processing
-- [ ] Extend the existing vitest suites to cover every new validation branch (invalid quantity, negative price, cancelled-order revenue exclusion, restock no-op logging)
-- [ ] **Gate:** `npm run test` all green · manual: place COD order, cancel it, verify restock; submit review with/without comment ✓
+- [x] **Fix the review bug** *(done 2026-07-16: `submitReview` Zod-parses input and stores `comment && comment.length > 0 ? comment : null`; regression test "should store a null comment when none is provided" added)*
+- [x] **Zod-validate every mutating action** *(schemas now live in `src/lib/validations.ts` after the Phase 4.1 move)*:
+  - [x] `reviewInputSchema`: `productId` positive int, `rating` **int** 1–5 (legacy message preserved), `comment` trimmed, max 2000, optional
+  - [x] `cartUpdateSchema`: `productId` positive int, `size` 1–50 chars, `quantity` int 0–`MAX_CART_QTY` (20)
+  - [x] `cartMergeSchema`: record-shape + per-item clamp; `mergeCartAction` wrapped in one `$transaction` with a post-merge `updateMany` cap
+  - [x] `variantInputSchema`: `volume` ≤ 30, `stock` int ≥ 0, **dedupe volumes** ✓ *(note: `price` is coerced to a bounded **number** — `>= 0`, ≤ 99,999,999.99, 2dp — not a string; Prisma accepts it for the `Decimal(10,2)` column)*
+  - [x] `productCreateSchema` / `productUpdateSchema` built on the variant schema; `images` validated as HTTPS URLs on `utfs.io` / `*.ufs.sh`
+- [x] Remove `rating` from `createProduct` input entirely ✓ *(field dropped from schema; DB default `0`; kills the `|| 5` bug)*
+- [x] `getCategories`: return `toPublicMessage(error, …)` instead of raw `error.message` ✓ *(done 2026-07-16 — `category.actions.ts` now masks the raw message behind `toPublicMessage(error, "حدث خطأ ما")`; test updated to assert the raw message does not leak)*
+- [x] `getTopSellingProducts`: filter revenue/quantity to fulfilled statuses ✓ *(`REVENUE_STATUSES = [PAID, SHIPPED, DELIVERED]` applied to both the `groupBy` and the revenue `findMany`; test asserts the `where` filter)*
+- [x] Clamp `getAllProducts` (`limit` ≤ 48, `page` ≥ 1) and `searchProducts` (query ≤ 100 chars) ✓ *(done 2026-07-16 — `searchProducts` now `.trim().slice(0, 100)`)*
+- [x] Validate `governorate` with `z.enum(ALL_GOVERNORATES)` ✓ *(trimmed via `preprocess`, then enum-checked; single source from `src/lib/shipping.ts`)*
+- [x] Use `variantId` in `createOrder` decrement + cancel-restock; **log when a restock `updateMany` returns `count === 0`** ✓ *(order items store `variantId`; restock keys by `id` with `(productId, volume)` fallback for legacy rows and `console.error`s a no-op; 2 tests added)*
+- [x] Decide + implement: `createOrder` deletes only the **ordered** cart items ✓ *(done 2026-07-16 — `deleteMany` now scoped to `{ userId, OR: orderedItems.map(({productId, size})) }`; partial checkout no longer wipes the whole cart)*
+- [x] Normalize duplicate `(id, size)` entries in the order payload (merge quantities) before processing ✓ *(done 2026-07-16 — payload merged via a `Map` keyed by `id__size`, quantities summed, before stock checks / cart deletion)*
+- [ ] Extend the existing vitest suites to cover every new validation branch — *Note: partial — added comment-less review, variantId restock, and restock no-op logging; still **missing** invalid-quantity, negative-price, and a data-driven cancelled-order revenue-exclusion test*
+- [ ] **Gate:** `npm run test` all green · manual: place COD order, cancel it, verify restock; review with/without comment — *Note: partial — automated `npm run test` green (**59/59**) + `tsc --noEmit` exit 0 ✓; manual flows not yet run*
 
 ### Phase 4 — UI, Types, and Component Cleanup
 
-- [ ] **Enable strict TypeScript** in stages: `"strictNullChecks": true` → fix fallout → `"strict": true`; add `"typecheck": "tsc --noEmit"` script and run it in CI
-- [ ] Create honest DTO types in `src/types/` (`SerializedProduct`, `SerializedVariant { price: number }`, `SerializedOrder`…); make `serializeProduct` return them (no `as T`), delete the `as unknown as Product[]` cast in `ShopContext`
-- [ ] Serialize `getInventoryProducts` Decimals at the boundary (defuse the client-component landmine)
-- [ ] Move `CartItems` + shared types out of `ShopContext.tsx` into `src/types/`; server actions import types only from there
-- [ ] **Unify the lib split:** move root `lib/` → `src/lib/` (actions under `src/lib/actions/`), update all imports to `@/lib/...`, delete root `lib/`
-- [ ] **ShopContext cleanup:** stop fetching the whole catalog client-side (products come from RSC props / dedicated fetch per page); guard `JSON.parse` with try/catch; memoize the context `value`; rename `DeliveryData` fields to match the domain (governorate, not state/zipcode)
-- [ ] `/orders` guest experience: redirect via fixed proxy matcher (Phase 2) + friendly signed-out state
-- [ ] **i18n/formatting pass:** one language policy for user-facing messages (Arabic-first given the audience); dates via `Intl.DateTimeFormat("ar-EG")`; money via `Intl.NumberFormat("ar-EG", { style: "currency", currency: "EGP" })` — one shared `formatCurrency` in `src/lib/format.ts`
-- [ ] **Dependency hygiene:** remove `@auth/prisma-adapter`, `bcryptjs`, `@types/bcryptjs`, `shadcn`, `update`; pin `next` + `eslint-config-next` to exact 16.2.x; fix `lint` script (`eslint .` with the existing flat config)
-- [ ] Delete `dist/` (Vite leftover), `stripe.exe`, stale `playwright-report/` + `test-results/`
-- [ ] Add CI (GitHub Actions): install → `prisma generate` → `typecheck` → `lint` → `vitest` → `next build`; optional Playwright smoke (browse → add to cart → COD checkout) reusing `playwright.config.ts`
-- [ ] **Gate:** `tsc --noEmit` strict ✓ · `eslint` ✓ · vitest ✓ · `next build` ✓ · Playwright smoke ✓
+- [x] **Enable strict TypeScript** + `"typecheck": "tsc --noEmit"` script ✓ *(done 2026-07-16 — went straight to full `"strict": true` (fallout was only 4 `noImplicitAny` errors, fixed in `RevenueChart.tsx` + `EditProductForm.tsx`); `typecheck` script added and green. CI wiring still pending under the CI task below.)*
+- [ ] Create honest DTO types in `src/types/` (`SerializedProduct`, `SerializedVariant { price: number }`, `SerializedOrder`…); make `serializeProduct` return them (no `as T`), delete the `as unknown as Product[]` cast in `ShopContext` — *Note: NOT done*
+- [ ] Serialize `getInventoryProducts` Decimals at the boundary (defuse the client-component landmine) — *Note: NOT done*
+- [ ] Move `CartItems` + shared types out of `ShopContext.tsx` into `src/types/`; server actions import types only from there — *Note: NOT done — `src/lib/actions/cart.actions.ts` still imports `CartItems` from `@/context/ShopContext` (a `"use client"` module)*
+- [x] **Unify the lib split:** move root `lib/` → `src/lib/`, update all imports to `@/lib/...`, delete root `lib/` ✓ *(done 2026-07-16: moved `auth`, `auth-client`, `prisma`, `shipping`, `uploadthing`, `validations`, and `actions/*` into `src/lib/`; ~53 imports rewritten to `@/lib/...`; root `lib/` deleted; tsc + vitest 59/59 green. **NB:** earlier Phase 2/3 notes referencing `lib/…` now live at `src/lib/…`.)*
+- [ ] **ShopContext cleanup:** stop fetching the whole catalog client-side; guard `JSON.parse` with try/catch; memoize the context `value`; rename `DeliveryData` fields (governorate, not state/zipcode) — *Note: NOT done*
+- [ ] `/orders` guest experience: redirect via fixed proxy matcher (Phase 2) + friendly signed-out state — *Note: partial — proxy matcher redirects guests (Phase 2 done); friendly signed-out state not added*
+- [ ] **i18n/formatting pass:** dates via `Intl.DateTimeFormat("ar-EG")`; money via `Intl.NumberFormat("ar-EG", { style: "currency", currency: "EGP" })` — one shared `formatCurrency` in `src/lib/format.ts` — *Note: partial — `formatCurrency` helper added (2026-07-16, `ar-EG`/EGP) alongside the existing `formatPrice`; still pending: wiring the 5 `formatPrice` call sites over to it, an Arabic-first policy for user-facing error strings, and replacing the hardcoded `en-GB` dates with `Intl.DateTimeFormat("ar-EG")`*
+- [x] **Dependency hygiene:** remove `@auth/prisma-adapter`, `bcryptjs`, `@types/bcryptjs`, `shadcn`, `update`; pin `next` + `eslint-config-next`; fix `lint` script (`eslint .`) ✓ *(done 2026-07-16 — 5 dead deps uninstalled (−838 transitive pkgs); `next` pinned `16.2.2`, `eslint-config-next` pinned `16.2.1-canary.18`; `lint` → `eslint .`)*
+- [x] Delete `dist/` (Vite leftover), `stripe.exe`, stale `playwright-report/` + `test-results/` ✓ *(done 2026-07-16 — all four removed from disk)*
+- [ ] Add CI (GitHub Actions): install → `prisma generate` → `typecheck` → `lint` → `vitest` → `next build`; optional Playwright smoke reusing `playwright.config.ts` — *Note: NOT done*
+- [ ] **Gate:** `tsc --noEmit` strict ✓ · `eslint` ✓ · vitest ✓ · `next build` ✓ · Playwright smoke ✓ — *Note: NOT done*
 
 ---
 

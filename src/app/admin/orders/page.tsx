@@ -5,7 +5,7 @@ import {
   getAllOrders,
   updateOrderStatus,
   OrderStatusType,
-} from "../../../../lib/actions/order.actions";
+} from "@/lib/actions/order.actions";
 import { OrderStatus } from "@prisma/client";
 
 export default function AdminOrdersPage() {

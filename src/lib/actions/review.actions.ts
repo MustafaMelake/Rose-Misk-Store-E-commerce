@@ -1,28 +1,26 @@
 "use server";
 
-import { prisma } from "../prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requireUser, requireAdmin, toPublicMessage } from "@/lib/auth-guards";
+import { reviewInputSchema } from "@/lib/validations";
 
-interface SubmitReviewInput {
-  productId: number;
-  rating: number;
-  comment?: string;
-}
-
-export async function submitReview({
-  productId,
-  rating,
-  comment,
-}: SubmitReviewInput) {
+export async function submitReview(input: unknown) {
   try {
     // Identity comes from the session — a client can no longer post a
     // review as an arbitrary user id.
     const user = await requireUser();
 
-    if (rating < 1 || rating > 5) {
-      return { success: false, error: "Rating must be between 1 and 5." };
+    // Validate untrusted input at the boundary (positive productId, integer
+    // rating 1–5, comment trimmed & length-capped).
+    const parsed = reviewInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0]?.message ?? "Invalid review data.",
+      };
     }
+    const { productId, rating, comment } = parsed.data;
 
     // Only customers who actually received the product may review it.
     const deliveredPurchase = await prisma.order.findFirst({
@@ -46,7 +44,9 @@ export async function submitReview({
         productId: productId,
         userId: user.id,
         rating: rating,
-        comment: comment?.trim() || null,
+        // Comment is optional (column is nullable): store the trimmed text or
+        // null when it is empty/omitted.
+        comment: comment && comment.length > 0 ? comment : null,
         status: "PENDING",
       },
     });

@@ -1,7 +1,7 @@
 // src/app/admin/products/page.tsx
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { getAdminProducts } from "../../../../lib/actions/product.actions";
+import { getAdminProducts } from "@/lib/actions/product.actions";
 import ProductsTable from "../../../components/admin/ProductsTable";
 
 export default async function AdminProductsPage() {

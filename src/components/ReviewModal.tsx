@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { submitReview } from "../../lib/actions/review.actions";
+import { submitReview } from "@/lib/actions/review.actions";
 
 interface ReviewModalProps {
   productId: number;

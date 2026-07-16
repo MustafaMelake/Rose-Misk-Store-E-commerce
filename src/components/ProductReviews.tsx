@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getApprovedProductReviews } from "../../lib/actions/review.actions";
+import { getApprovedProductReviews } from "@/lib/actions/review.actions";
 import { renderStars } from "@/components/Stars";
 import { MessageSquare, ChevronDown } from "lucide-react";
 

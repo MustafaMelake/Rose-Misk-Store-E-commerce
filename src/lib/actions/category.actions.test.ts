@@ -1,15 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getCategories } from "./category.actions";
-import { prisma } from "../prisma";
+import { prisma } from "@/lib/prisma";
 
 // 1. Mock Prisma
-vi.mock("../prisma", () => ({
+vi.mock("@/lib/prisma", () => ({
   prisma: {
     category: {
       findMany: vi.fn(),
     },
   },
 }));
+
+// 2. Mock the auth guards for toPublicMessage (masks raw errors).
+vi.mock("@/lib/auth-guards", () => {
+  class PublicError extends Error {}
+  return {
+    PublicError,
+    toPublicMessage: (e: any, fb = "An unexpected error occurred.") =>
+      e instanceof PublicError ? e.message : fb,
+  };
+});
 
 describe("Category Server Actions", () => {
   beforeEach(() => {
@@ -36,7 +46,7 @@ describe("Category Server Actions", () => {
       expect(result.data).toEqual(mockCategories);
     });
 
-    it("should return an error object when database query fails", async () => {
+    it("should mask the raw DB error behind a generic message", async () => {
       // Arrange
       (prisma.category.findMany as any).mockRejectedValue(
         new Error("Database connection failed")
@@ -45,9 +55,10 @@ describe("Category Server Actions", () => {
       // Act
       const result = await getCategories();
 
-      // Assert
+      // Assert: the raw message must NOT leak to the client.
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Database connection failed");
+      expect(result.error).toBe("حدث خطأ ما");
+      expect(result.error).not.toBe("Database connection failed");
     });
   });
 });

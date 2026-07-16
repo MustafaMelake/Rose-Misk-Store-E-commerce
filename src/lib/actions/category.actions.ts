@@ -1,6 +1,7 @@
 "use server";
 
-import { prisma } from "../prisma";
+import { prisma } from "@/lib/prisma";
+import { toPublicMessage } from "@/lib/auth-guards";
 
 export async function getCategories() {
   try {
@@ -11,11 +12,13 @@ export async function getCategories() {
     });
 
     return { success: true, data: categories };
-  } catch (error: any) {
+  } catch (error) {
+    // Never leak a raw DB/error message to the client — mask it behind a
+    // generic fallback (only PublicError messages pass through).
     console.error("PRISMA ERROR:", error);
     return {
       success: false,
-      error: error.message || "حدث خطأ ما",
+      error: toPublicMessage(error, "حدث خطأ ما"),
     };
   }
 }

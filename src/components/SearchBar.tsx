@@ -4,7 +4,7 @@ import React, { useState, useContext, useEffect, useRef } from "react";
 import { ShopContext } from "../context/ShopContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { searchProducts } from "../../lib/actions/product.actions"; // استيراد الـ Action
+import { searchProducts } from "@/lib/actions/product.actions"; // استيراد الـ Action
 
 const SearchBar: React.FC = () => {
   const context = useContext(ShopContext);

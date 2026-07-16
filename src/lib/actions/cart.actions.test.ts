@@ -5,15 +5,19 @@ import {
   clearUserCart,
   mergeCartAction,
 } from "./cart.actions";
-import { prisma } from "../prisma";
+import { prisma } from "@/lib/prisma";
 
 // 1. Mock the Prisma Client
-vi.mock("../prisma", () => ({
+vi.mock("@/lib/prisma", () => ({
   prisma: {
+    $transaction: vi.fn(async (callback) => {
+      return await callback(prisma);
+    }),
     cartItem: {
       findMany: vi.fn(),
       deleteMany: vi.fn(),
       upsert: vi.fn(),
+      updateMany: vi.fn(),
     },
   },
 }));

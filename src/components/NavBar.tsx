@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { ShopContext } from "../context/ShopContext";
 import { ThemeContext } from "./ThemeContext";
-import { authClient } from "../../lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 
 const NavBar: React.FC = () => {

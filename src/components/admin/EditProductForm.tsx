@@ -4,8 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { updateProduct } from "../../../lib/actions/product.actions";
-import { UploadButton } from "../../../lib/uploadthing";
+import { updateProduct } from "@/lib/actions/product.actions";
+import { UploadButton } from "@/lib/uploadthing";
+
+// A single editable variant row. price/stock may be strings while typing in the
+// number inputs; `updateProduct` coerces them server-side.
+type VariantRow = { volume: string; price: number | string; stock: number | string };
 
 export default function EditProductForm({ initialData }: { initialData: any }) {
   if (!initialData)
@@ -28,7 +32,7 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
     initialData?.images?.length ? [initialData.images[0]] : [""]
   );
 
-  const [variants, setVariants] = useState(
+  const [variants, setVariants] = useState<VariantRow[]>(
     initialData?.variants?.length
       ? initialData.variants
       : [{ volume: "50ml", price: 0, stock: 10 }]

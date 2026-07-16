@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { createProduct } from "../../../../../lib/actions/product.actions";
-import { getCategories } from "../../../../../lib/actions/category.actions";
-import { UploadButton } from "../../../../../lib/uploadthing";
+import { createProduct } from "@/lib/actions/product.actions";
+import { getCategories } from "@/lib/actions/category.actions";
+import { UploadButton } from "@/lib/uploadthing";
 
 export default function AddProductPage() {
   const router = useRouter();

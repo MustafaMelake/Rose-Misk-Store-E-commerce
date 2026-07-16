@@ -5,12 +5,12 @@ import {
   getAllOrders,
   updateOrderStatus,
 } from "./order.actions";
-import { prisma } from "../prisma";
+import { prisma } from "@/lib/prisma";
 import { requireAdmin, AuthError } from "@/lib/auth-guards";
 import { revalidatePath } from "next/cache";
 
 // 1. Mock Prisma and $transaction
-vi.mock("../prisma", () => ({
+vi.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: vi.fn(async (callback) => {
       return await callback(prisma);
@@ -53,14 +53,19 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-// 4. Mock shipping to isolate the fee calculation
-vi.mock("../../lib/shipping", () => ({
-  calculateShippingFee: vi.fn((gov) => {
-    if (gov === "القاهرة") return 75;
-    if (gov === "سوهاج") return 115;
-    return 85;
-  }),
-}));
+// 4. Mock shipping to isolate the fee calculation. Keep the real
+//    ALL_GOVERNORATES export (validations.ts builds a z.enum from it).
+vi.mock("@/lib/shipping", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/shipping")>();
+  return {
+    ...actual,
+    calculateShippingFee: vi.fn((gov: string) => {
+      if (gov === "القاهرة") return 75;
+      if (gov === "سوهاج") return 115;
+      return 85;
+    }),
+  };
+});
 
 describe("Order Server Actions", () => {
   const mockUserId = "user_123";
@@ -124,7 +129,10 @@ describe("Order Server Actions", () => {
       expect(Number(callArgs.data.totalAmount)).toBe(275);
 
       expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({
-        where: { userId: mockUserId },
+        where: {
+          userId: mockUserId,
+          OR: [{ productId: 1, size: "50ml" }],
+        },
       });
 
       expect(revalidatePath).toHaveBeenCalledWith("/orders");
@@ -264,6 +272,47 @@ describe("Order Server Actions", () => {
 
       expect(revalidatePath).toHaveBeenCalledWith("/admin/orders");
       expect(result.success).toBe(true);
+    });
+
+    it("should restock by variantId when the order item has one", async () => {
+      // Arrange: item carries the precise variant FK
+      (prisma.order.findUnique as any).mockResolvedValue({
+        id: 6,
+        status: "PENDING",
+        items: [{ productId: 1, variantId: 99, size: "50ml", quantity: 3 }],
+      });
+      (prisma.order.updateMany as any).mockResolvedValue({ count: 1 });
+      (prisma.productVariant.updateMany as any).mockResolvedValue({ count: 1 });
+
+      const result = await updateOrderStatus(6, "CANCELLED");
+
+      // Restock targets the variant by id, not by (productId, volume)
+      expect(prisma.productVariant.updateMany).toHaveBeenCalledWith({
+        where: { id: 99 },
+        data: { stock: { increment: 3 } },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("should log an error when a restock updateMany affects no rows", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      (prisma.order.findUnique as any).mockResolvedValue({
+        id: 7,
+        status: "PENDING",
+        items: [{ productId: 1, variantId: 42, size: "50ml", quantity: 2 }],
+      });
+      (prisma.order.updateMany as any).mockResolvedValue({ count: 1 });
+      // Variant no longer matches (renamed/deleted) -> no row updated
+      (prisma.productVariant.updateMany as any).mockResolvedValue({ count: 0 });
+
+      const result = await updateOrderStatus(7, "CANCELLED");
+
+      expect(result.success).toBe(true);
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("restock no-op")
+      );
+      errorSpy.mockRestore();
     });
 
     it("should just update status without touching stock if status is NOT CANCELLED", async () => {

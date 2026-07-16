@@ -2,7 +2,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
-import { prisma } from "./prisma";
+import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY

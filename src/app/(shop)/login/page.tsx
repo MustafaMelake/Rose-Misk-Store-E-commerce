@@ -4,7 +4,7 @@ import Link from "next/link";
 import { LogIn } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FaFacebook } from "react-icons/fa";
-import { authClient } from "../../../../lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import Footer from "@/components/Footer";
 
 // أيقونة جوجل الأصلية

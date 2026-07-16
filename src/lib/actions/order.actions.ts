@@ -1,9 +1,13 @@
 "use server";
 import { Prisma, type OrderStatus } from "@prisma/client";
-import { prisma } from "../prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { calculateShippingFee } from "../../lib/shipping";
-import { orderInputSchema, orderItemsInputSchema } from "../validations";
+import { calculateShippingFee } from "@/lib/shipping";
+import {
+  orderInputSchema,
+  orderItemsInputSchema,
+  type OrderItemInput,
+} from "@/lib/validations";
 import {
   getCurrentUser,
   requireUser,
@@ -56,7 +60,20 @@ export async function createOrder(orderData: unknown, items: unknown) {
       };
     }
     const orderInput = parsedOrder.data;
-    const orderItems = parsedItems.data;
+
+    // Normalize the payload: merge duplicate (id, size) lines into one so the
+    // same variant isn't stock-checked/created twice and quantities are summed.
+    const mergedItemsMap = new Map<string, OrderItemInput>();
+    for (const item of parsedItems.data) {
+      const key = `${item.id}__${item.size}`;
+      const existing = mergedItemsMap.get(key);
+      if (existing) {
+        existing.quantity += item.quantity;
+      } else {
+        mergedItemsMap.set(key, { ...item });
+      }
+    }
+    const orderItems = Array.from(mergedItemsMap.values());
 
     // Card payments are not wired to a gateway yet — reject them explicitly
     // instead of creating an order that can never be paid.
@@ -106,6 +123,9 @@ export async function createOrder(orderData: unknown, items: unknown) {
           quantity: item.quantity,
           price: unitPrice,
           size: item.size,
+          // Link the exact variant so cancel-restock can target it by id even
+          // if the volume label is later renamed.
+          variantId: variant.id,
         });
       }
 
@@ -137,7 +157,14 @@ export async function createOrder(orderData: unknown, items: unknown) {
       });
 
       if (userId) {
-        await tx.cartItem.deleteMany({ where: { userId } });
+        // Remove ONLY the lines that were just ordered — a partial checkout
+        // must not wipe items the customer left in their cart.
+        await tx.cartItem.deleteMany({
+          where: {
+            userId,
+            OR: orderItems.map((it) => ({ productId: it.id, size: it.size })),
+          },
+        });
       }
 
       return newOrder;
@@ -285,10 +312,24 @@ export async function updateOrderStatus(
         // Restock only when this call is the one that performed the cancel.
         if (res.count === 1) {
           for (const item of existingOrder.items) {
-            await tx.productVariant.updateMany({
-              where: { productId: item.productId, volume: item.size },
+            // Prefer the precise variantId FK; fall back to (productId, volume)
+            // for legacy rows written before variantId existed.
+            const restock = await tx.productVariant.updateMany({
+              where: item.variantId
+                ? { id: item.variantId }
+                : { productId: item.productId, volume: item.size },
               data: { stock: { increment: item.quantity } },
             });
+
+            // A no-op restock means the variant was renamed/deleted — the units
+            // are silently lost. Surface it instead of swallowing it.
+            if (restock.count === 0) {
+              console.error(
+                `[order ${orderId}] restock no-op for product ${item.productId} ` +
+                  `(variantId=${item.variantId ?? "none"}, size=${item.size}); ` +
+                  `variant may have been renamed or removed.`
+              );
+            }
           }
         }
       } else {

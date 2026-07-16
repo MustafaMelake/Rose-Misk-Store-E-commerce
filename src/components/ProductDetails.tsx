@@ -6,7 +6,7 @@ import { ShopContext } from "../context/ShopContext";
 import ProductItem from "./ProductItem";
 import { renderStars } from "./Stars";
 import Footer from "@/components/Footer";
-import { authClient } from "../../lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import ReviewModal from "@/components/ReviewModal";
 import ProductReviews from "@/components/ProductReviews";
 

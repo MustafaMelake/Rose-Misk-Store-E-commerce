@@ -9,14 +9,14 @@ import {
 } from "@testing-library/react";
 import ShopContextProvider, { ShopContext } from "./ShopContext";
 import { useRouter } from "next/navigation";
-import { getAllProducts } from "../../lib/actions/product.actions";
+import { getAllProducts } from "@/lib/actions/product.actions";
 import {
   getUserCart,
   updateCartInDB,
   mergeCartAction,
-} from "../../lib/actions/cart.actions";
-import { getUserOrders, createOrder } from "../../lib/actions/order.actions";
-import { authClient } from "../../lib/auth-client";
+} from "@/lib/actions/cart.actions";
+import { getUserOrders, createOrder } from "@/lib/actions/order.actions";
+import { authClient } from "@/lib/auth-client";
 
 // 1. Mock Next.js Navigation
 const mockPush = vi.fn();
@@ -27,23 +27,23 @@ vi.mock("next/navigation", () => ({
 }));
 
 // 2. Mock Server Actions
-vi.mock("../../lib/actions/product.actions", () => ({
+vi.mock("@/lib/actions/product.actions", () => ({
   getAllProducts: vi.fn(),
 }));
 
-vi.mock("../../lib/actions/cart.actions", () => ({
+vi.mock("@/lib/actions/cart.actions", () => ({
   getUserCart: vi.fn(),
   updateCartInDB: vi.fn(),
   mergeCartAction: vi.fn(),
 }));
 
-vi.mock("../../lib/actions/order.actions", () => ({
+vi.mock("@/lib/actions/order.actions", () => ({
   getUserOrders: vi.fn(),
   createOrder: vi.fn(),
 }));
 
 // 3. Mock Auth Client
-vi.mock("../../lib/auth-client", () => ({
+vi.mock("@/lib/auth-client", () => ({
   authClient: {
     useSession: vi.fn(),
   },

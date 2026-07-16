@@ -8,14 +8,14 @@ import React, {
   useEffect,
 } from "react";
 import { useRouter } from "next/navigation";
-import { getAllProducts } from "../../lib/actions/product.actions";
+import { getAllProducts } from "@/lib/actions/product.actions";
 import {
   getUserCart,
   updateCartInDB,
   mergeCartAction,
-} from "../../lib/actions/cart.actions";
-import { authClient } from "../../lib/auth-client";
-import { createOrder, getUserOrders } from "../../lib/actions/order.actions";
+} from "@/lib/actions/cart.actions";
+import { authClient } from "@/lib/auth-client";
+import { createOrder, getUserOrders } from "@/lib/actions/order.actions";
 
 export type CartItems = Record<string, Record<string, number>>;
 export interface ProductVariant {

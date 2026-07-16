@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Trash2, Loader2 } from "lucide-react";
-import { deleteProduct } from "../../../lib/actions/product.actions";
+import { deleteProduct } from "@/lib/actions/product.actions";
 
 export default function DeleteProductButton({ id }: { id: number }) {
   const [isDeleting, setIsDeleting] = useState(false);

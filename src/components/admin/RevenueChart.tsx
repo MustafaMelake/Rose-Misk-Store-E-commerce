@@ -29,7 +29,14 @@ interface RevenueChartProps {
 export function RevenueChart({ orders }: RevenueChartProps) {
   // 1. معالجة البيانات: حساب مبيعات آخر 6 شهور بدقة
   const chartData = useMemo(() => {
-    const months = [];
+    type MonthBucket = {
+      name: string;
+      fullMonth: string;
+      year: number;
+      revenue: number;
+      orderCount: number;
+    };
+    const months: MonthBucket[] = [];
     const now = new Date();
 
     // إنشاء هيكل لآخر 6 شهور (حتى لو مفيش فيهم مبيعات يظهروا بـ 0)

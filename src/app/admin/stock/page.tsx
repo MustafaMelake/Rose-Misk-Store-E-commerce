@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { PackageOpen, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
-import { getInventoryProducts } from "../../../../lib/actions/product.actions";
+import { getInventoryProducts } from "@/lib/actions/product.actions";
 
 export const metadata = {
   title: "Inventory & Stock | Admin Dashboard",

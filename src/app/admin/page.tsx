@@ -8,7 +8,7 @@ import {
 import { DollarSign, Package, ShoppingCart, Users, Clock } from "lucide-react";
 import { RevenueChart } from "@/components/admin/RevenueChart";
 import { requireAdmin } from "@/lib/auth-guards";
-import { getDashboardStats } from "../../../lib/actions/dashboard.actions";
+import { getDashboardStats } from "@/lib/actions/dashboard.actions";
 
 export default async function AdminDashboard() {
   // Defense in depth: guard before any data is fetched or the tree renders,

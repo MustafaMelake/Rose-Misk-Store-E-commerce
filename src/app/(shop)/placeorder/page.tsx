@@ -3,11 +3,11 @@
 import React, { useContext, useMemo, useState } from "react";
 import { ShopContext } from "../../../context/ShopContext";
 import { useRouter } from "next/navigation";
-import { authClient } from "../../../../lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import {
   ALL_GOVERNORATES,
   calculateShippingFee,
-} from "../../../../lib/shipping";
+} from "@/lib/shipping";
 import { formatPrice } from "@/lib/format";
 
 interface CartItem {

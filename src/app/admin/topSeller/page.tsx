@@ -4,7 +4,7 @@ import { TrendingUp, Star, Award, BarChart3, Banknote } from "lucide-react";
 import {
   getTopSellingProducts,
   getTopRatedProducts,
-} from "../../../../lib/actions/product.actions";
+} from "@/lib/actions/product.actions";
 
 export const metadata = {
   title: "Top Sellers & Rated | Admin Dashboard",
