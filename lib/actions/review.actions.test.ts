@@ -23,12 +23,9 @@ vi.mock("../prisma", () => ({
     product: {
       update: vi.fn(),
     },
-<<<<<<< HEAD
-=======
     order: {
       findFirst: vi.fn(),
     },
->>>>>>> client-release
   },
 }));
 
@@ -37,8 +34,6 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-<<<<<<< HEAD
-=======
 // 3. Mock the auth guards — the reviewer id comes from the session and
 // approvals require an admin.
 vi.mock("@/lib/auth-guards", () => {
@@ -55,7 +50,6 @@ vi.mock("@/lib/auth-guards", () => {
   };
 });
 
->>>>>>> client-release
 describe("Review Server Actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -70,11 +64,8 @@ describe("Review Server Actions", () => {
     };
 
     it("should create a pending review on valid input and trim comments", async () => {
-<<<<<<< HEAD
-=======
       // The reviewer has a delivered order containing this product
       (prisma.order.findFirst as any).mockResolvedValue({ id: "order_1" });
->>>>>>> client-release
       (prisma.review.create as any).mockResolvedValue({ id: "rev_1" });
 
       const result = await submitReview(validPayload);
@@ -105,9 +96,6 @@ describe("Review Server Actions", () => {
       expect(prisma.review.create).not.toHaveBeenCalled();
     });
 
-<<<<<<< HEAD
-    it("should return a specific error message on P2002 duplicate constraint", async () => {
-=======
     it("should reject a review when the user has no delivered purchase", async () => {
       // No delivered order for this product
       (prisma.order.findFirst as any).mockResolvedValue(null);
@@ -122,7 +110,6 @@ describe("Review Server Actions", () => {
     it("should return a specific error message on P2002 duplicate constraint", async () => {
       // The reviewer is eligible, but a review already exists
       (prisma.order.findFirst as any).mockResolvedValue({ id: "order_1" });
->>>>>>> client-release
       // Simulate Prisma Unique Constraint Error
       const prismaError = new Error("Unique constraint");
       (prismaError as any).code = "P2002";

@@ -157,13 +157,7 @@ const Contact: React.FC = () => {
               >
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors z-10" />
                 <motion.img
-<<<<<<< HEAD
-                  src={
-                    "https://fkcqwx31dk.ufs.sh/f/Zddv4bf9RBdIluVzKh8WfIeSLq8YrVp2ghCjnostWFKdZAcm"
-                  }
-=======
                   src={"/location-img.png"}
->>>>>>> client-release
                   alt="Rose Misk Office Location"
                   className="w-full h-full object-cover"
                   whileHover={{ scale: 1.1 }}
@@ -184,11 +178,7 @@ interface InfoItemProps {
   title: string;
   detail: string;
   variants: any;
-<<<<<<< HEAD
-  href?: string; // أضفنا الـ href هنا كـ Optional Property
-=======
   href?: string; 
->>>>>>> client-release
 }
 
 const ContactInfoItem: React.FC<InfoItemProps> = ({

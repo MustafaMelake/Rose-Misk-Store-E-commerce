@@ -107,11 +107,7 @@ export default async function StockPage() {
                       Price:
                     </span>
                     <span className="font-semibold text-gray-900 dark:text-white">
-<<<<<<< HEAD
-                      {variant.price} EGP
-=======
                       {Number(variant.price)} EGP
->>>>>>> client-release
                     </span>
                   </div>
 

@@ -4,11 +4,7 @@ import {
   updateCartInDB,
   clearUserCart,
   mergeCartAction,
-<<<<<<< HEAD
-} from "./cart.actions"; 
-=======
 } from "./cart.actions";
->>>>>>> client-release
 import { prisma } from "../prisma";
 
 // 1. Mock the Prisma Client
@@ -22,12 +18,6 @@ vi.mock("../prisma", () => ({
   },
 }));
 
-<<<<<<< HEAD
-describe("Cart Server Actions", () => {
-  const mockUserId = "user_123";
-
-  // 2. Clear mock history before each test to prevent data leakage between tests
-=======
 // 2. Mock the auth guards — identity is now derived server-side.
 vi.mock("@/lib/auth-guards", () => {
   class PublicError extends Error {}
@@ -47,7 +37,6 @@ describe("Cart Server Actions", () => {
   const mockUserId = "user_123";
 
   // Clear mock history before each test to prevent data leakage between tests
->>>>>>> client-release
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -61,13 +50,8 @@ describe("Cart Server Actions", () => {
         { productId: 2, size: "Standard", quantity: 5 },
       ]);
 
-<<<<<<< HEAD
-      // Act: Call the action
-      const result = await getUserCart(mockUserId);
-=======
       // Act: Call the action (identity comes from the mocked session)
       const result = await getUserCart();
->>>>>>> client-release
 
       // Assert: Verify the transformation logic
       expect(prisma.cartItem.findMany).toHaveBeenCalledWith({
@@ -87,11 +71,7 @@ describe("Cart Server Actions", () => {
       );
 
       // Act
-<<<<<<< HEAD
-      const result = await getUserCart(mockUserId);
-=======
       const result = await getUserCart();
->>>>>>> client-release
 
       // Assert
       expect(result.success).toBe(false);
@@ -105,11 +85,7 @@ describe("Cart Server Actions", () => {
       (prisma.cartItem.deleteMany as any).mockResolvedValue({ count: 1 });
 
       // Act
-<<<<<<< HEAD
-      const result = await updateCartInDB(mockUserId, 10, "50ml", 0);
-=======
       const result = await updateCartInDB(10, "50ml", 0);
->>>>>>> client-release
 
       // Assert
       expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({
@@ -124,11 +100,7 @@ describe("Cart Server Actions", () => {
       (prisma.cartItem.upsert as any).mockResolvedValue({});
 
       // Act
-<<<<<<< HEAD
-      const result = await updateCartInDB(mockUserId, 10, "50ml", 3);
-=======
       const result = await updateCartInDB(10, "50ml", 3);
->>>>>>> client-release
 
       // Assert
       expect(prisma.cartItem.upsert).toHaveBeenCalledWith({
@@ -156,11 +128,7 @@ describe("Cart Server Actions", () => {
         new Error("Network Error")
       );
 
-<<<<<<< HEAD
-      const result = await updateCartInDB(mockUserId, 10, "50ml", 3);
-=======
       const result = await updateCartInDB(10, "50ml", 3);
->>>>>>> client-release
 
       expect(result.success).toBe(false);
     });
@@ -170,11 +138,7 @@ describe("Cart Server Actions", () => {
     it("should clear all user cart items", async () => {
       (prisma.cartItem.deleteMany as any).mockResolvedValue({ count: 5 });
 
-<<<<<<< HEAD
-      const result = await clearUserCart(mockUserId);
-=======
       const result = await clearUserCart();
->>>>>>> client-release
 
       expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({
         where: { userId: mockUserId },
@@ -187,11 +151,7 @@ describe("Cart Server Actions", () => {
         new Error("Failed")
       );
 
-<<<<<<< HEAD
-      const result = await clearUserCart(mockUserId);
-=======
       const result = await clearUserCart();
->>>>>>> client-release
 
       expect(result.success).toBe(false);
     });
@@ -207,11 +167,7 @@ describe("Cart Server Actions", () => {
       (prisma.cartItem.upsert as any).mockResolvedValue({});
 
       // Act
-<<<<<<< HEAD
-      const result = await mergeCartAction(mockUserId, localCart);
-=======
       const result = await mergeCartAction(localCart);
->>>>>>> client-release
 
       // Assert
       expect(result.success).toBe(true);
@@ -237,11 +193,7 @@ describe("Cart Server Actions", () => {
         new Error("Merge error")
       );
 
-<<<<<<< HEAD
-      const result = await mergeCartAction(mockUserId, localCart);
-=======
       const result = await mergeCartAction(localCart);
->>>>>>> client-release
 
       expect(result.success).toBe(false);
     });

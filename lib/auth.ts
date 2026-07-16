@@ -2,14 +2,11 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
-<<<<<<< HEAD
-=======
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
->>>>>>> client-release
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -21,18 +18,13 @@ export const auth = betterAuth({
         type: "string",
         required: false,
         defaultValue: "USER",
-<<<<<<< HEAD
-=======
         // Prevent clients from assigning themselves a role during sign-up.
         input: false,
->>>>>>> client-release
       },
     },
   },
   emailAndPassword: {
     enabled: true,
-<<<<<<< HEAD
-=======
     // Users cannot sign in until they confirm ownership of their email.
     // This closes the "register a password account on a victim's email"
     // account-linking takeover vector.
@@ -81,7 +73,6 @@ export const auth = betterAuth({
       enabled: true,
       trustedProviders: ["google", "facebook"],
     },
->>>>>>> client-release
   },
   socialProviders: {
     google: {
@@ -93,13 +84,10 @@ export const auth = betterAuth({
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET as string,
     },
   },
-<<<<<<< HEAD
-=======
   // Throttle auth endpoints (sign-in / sign-up / etc.) against brute force.
   rateLimit: {
     enabled: true,
     window: 60,
     max: 20,
   },
->>>>>>> client-release
 });

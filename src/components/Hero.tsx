@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-"use client"; 
-=======
 "use client";
->>>>>>> client-release
 
 import React from "react";
 import Link from "next/link";
@@ -53,13 +49,7 @@ const Hero: React.FC = () => {
         className="relative aspect-[2/1] w-full sm:w-1/2 overflow-hidden"
       >
         <Image
-<<<<<<< HEAD
-          src={
-            "https://fkcqwx31dk.ufs.sh/f/Zddv4bf9RBdIxza1NX5FPT16X4z8Wdm5fnlq2gShev7VEoJL"
-          }
-=======
           src={"/Hero-img.webp"}
->>>>>>> client-release
           loading="eager"
           alt="Rose Misk | Exquisite Naxos-Inspired Fragrances Promotional Banner"
           fill

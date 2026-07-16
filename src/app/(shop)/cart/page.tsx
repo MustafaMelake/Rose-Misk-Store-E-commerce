@@ -7,10 +7,7 @@ import { Trash2, Minus, Plus, ShoppingBag } from "lucide-react";
 import Title from "../../../components/Title";
 import CheckOut from "../../../components/CheckOut";
 import Footer from "@/components/Footer";
-<<<<<<< HEAD
-=======
 import { formatPrice } from "@/lib/format";
->>>>>>> client-release
 
 interface CartDisplayItem {
   id: number;
@@ -158,11 +155,7 @@ const Cart: React.FC = () => {
                       <span className="text-xs font-normal mr-1">
                         {currency}
                       </span>
-<<<<<<< HEAD
-                      {(item.price * item.quantity).toLocaleString()}
-=======
                       {formatPrice(item.price * item.quantity)}
->>>>>>> client-release
                     </p>
                   </div>
                 </div>

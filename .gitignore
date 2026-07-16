@@ -26,10 +26,7 @@ stripe.exe
 *.njsproj
 *.sln
 *.sw?
-<<<<<<< HEAD
-=======
 *.tsbuildinfo
->>>>>>> client-release
 
 /src/generated/prisma
 

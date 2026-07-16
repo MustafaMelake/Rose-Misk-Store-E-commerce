@@ -33,10 +33,7 @@ vi.mock("../prisma", () => ({
     productVariant: {
       deleteMany: vi.fn(),
       findMany: vi.fn(),
-<<<<<<< HEAD
-=======
       upsert: vi.fn(),
->>>>>>> client-release
     },
     orderItem: {
       groupBy: vi.fn(),
@@ -50,8 +47,6 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-<<<<<<< HEAD
-=======
 // 3. Mock the auth guards — mutations and admin reads require an admin.
 vi.mock("@/lib/auth-guards", () => {
   class PublicError extends Error {}
@@ -67,7 +62,6 @@ vi.mock("@/lib/auth-guards", () => {
   };
 });
 
->>>>>>> client-release
 describe("Product Server Actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -170,20 +164,13 @@ describe("Product Server Actions", () => {
   describe("updateProduct", () => {
     const updateData = {
       name: "Updated Perfume",
-<<<<<<< HEAD
-=======
       images: [],
->>>>>>> client-release
       categoryId: 3,
       variants: [{ volume: "100ml", price: 150, stock: 5 }],
     };
 
-<<<<<<< HEAD
-    it("should delete old variants and update the product", async () => {
-=======
     it("should upsert variants and update the product's scalar fields", async () => {
       (prisma.productVariant.upsert as any).mockResolvedValue({});
->>>>>>> client-release
       (prisma.productVariant.deleteMany as any).mockResolvedValue({});
       (prisma.product.update as any).mockResolvedValue({
         id: 1,
@@ -192,13 +179,7 @@ describe("Product Server Actions", () => {
 
       const result = await updateProduct(1, updateData);
 
-<<<<<<< HEAD
-      expect(prisma.productVariant.deleteMany).toHaveBeenCalledWith({
-        where: { productId: 1 },
-      });
-=======
       // Scalar fields updated (no variants nested-create anymore)
->>>>>>> client-release
       expect(prisma.product.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 1 },
@@ -208,8 +189,6 @@ describe("Product Server Actions", () => {
           }),
         })
       );
-<<<<<<< HEAD
-=======
 
       // Each incoming variant is upserted by (productId, volume)
       expect(prisma.productVariant.upsert).toHaveBeenCalledWith({
@@ -223,7 +202,6 @@ describe("Product Server Actions", () => {
         where: { productId: 1, volume: { notIn: ["100ml"] } },
       });
 
->>>>>>> client-release
       expect(revalidatePath).toHaveBeenCalledWith("/admin/products");
       expect(result.success).toBe(true);
     });

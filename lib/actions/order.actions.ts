@@ -1,11 +1,4 @@
 "use server";
-<<<<<<< HEAD
-import { prisma } from "../prisma";
-import { auth } from "../auth";
-import { headers } from "next/headers";
-import { revalidatePath } from "next/cache";
-import { calculateShippingFee } from "../../lib/shipping";
-=======
 import { Prisma, type OrderStatus } from "@prisma/client";
 import { prisma } from "../prisma";
 import { revalidatePath } from "next/cache";
@@ -18,7 +11,6 @@ import {
   PublicError,
   toPublicMessage,
 } from "@/lib/auth-guards";
->>>>>>> client-release
 
 export type OrderStatusType =
   | "PENDING"
@@ -28,19 +20,6 @@ export type OrderStatusType =
   | "CANCELLED"
   | "AWAITING_PAYMENT";
 
-<<<<<<< HEAD
-export async function createOrder(
-  userId: string | null,
-  orderData: any,
-  items: { id: number; size: string; quantity: number }[]
-) {
-  try {
-    const result = await prisma.$transaction(async (tx) => {
-      let serverTotal = 0;
-      const orderItemsToCreate = [];
-
-      for (const item of items) {
-=======
 /**
  * Allowed order status transitions. DELIVERED and CANCELLED are terminal —
  * no further changes are permitted once an order reaches them.
@@ -95,25 +74,16 @@ export async function createOrder(orderData: unknown, items: unknown) {
         [];
 
       for (const item of orderItems) {
->>>>>>> client-release
         const variant = await tx.productVariant.findFirst({
           where: { productId: item.id, volume: item.size },
         });
 
-<<<<<<< HEAD
-        if (!variant || variant.stock < item.quantity) {
-          throw new Error(
-=======
         if (!variant) {
           throw new PublicError(
->>>>>>> client-release
             `المنتج ذو الحجم ${item.size} غير متوفر بالكمية المطلوبة.`
           );
         }
 
-<<<<<<< HEAD
-        serverTotal += variant.price * item.quantity;
-=======
         // Atomic, conditional decrement: the stock check and the write happen
         // in a single statement, so two shoppers cannot both buy the last unit.
         // If the guard fails, count === 0 and the whole transaction rolls back.
@@ -130,39 +100,10 @@ export async function createOrder(orderData: unknown, items: unknown) {
 
         const unitPrice = new Prisma.Decimal(variant.price);
         serverTotal = serverTotal.add(unitPrice.mul(item.quantity));
->>>>>>> client-release
 
         orderItemsToCreate.push({
           productId: item.id,
           quantity: item.quantity,
-<<<<<<< HEAD
-          price: variant.price,
-          size: item.size,
-        });
-
-        await tx.productVariant.update({
-          where: { id: variant.id },
-          data: { stock: { decrement: item.quantity } },
-        });
-      }
-
-      const deliveryFee = calculateShippingFee(orderData.governorate);
-      const finalTotal = serverTotal + deliveryFee;
-
-      const initialStatus = (
-        orderData.paymentMethod === "CARD" ? "AWAITING_PAYMENT" : "PENDING"
-      ) as OrderStatusType;
-
-      const orderCreationData: any = {
-        customerName: orderData.customerName,
-        customerEmail: orderData.customerEmail,
-        customerPhone: orderData.customerPhone,
-        governorate: orderData.governorate,
-        address: orderData.address,
-        shippingFee: deliveryFee,
-        totalAmount: finalTotal,
-        paymentMethod: orderData.paymentMethod || "COD",
-=======
           price: unitPrice,
           size: item.size,
         });
@@ -183,7 +124,6 @@ export async function createOrder(orderData: unknown, items: unknown) {
         shippingFee: deliveryFee,
         totalAmount: finalTotal,
         paymentMethod: orderInput.paymentMethod,
->>>>>>> client-release
         status: initialStatus,
         items: { create: orderItemsToCreate },
       };
@@ -206,18 +146,6 @@ export async function createOrder(orderData: unknown, items: unknown) {
     revalidatePath("/orders");
 
     return { success: true, orderId: result.id };
-<<<<<<< HEAD
-  } catch (error: any) {
-    console.error("Order Action Error:", error.message);
-    return { success: false, message: error.message };
-  }
-}
-
-export async function getUserOrders(userId: string) {
-  try {
-    const orders = await prisma.order.findMany({
-      where: { userId },
-=======
   } catch (error) {
     console.error("createOrder error:", error);
     return {
@@ -235,7 +163,6 @@ export async function getUserOrders() {
     const user = await requireUser();
     const orders = await prisma.order.findMany({
       where: { userId: user.id },
->>>>>>> client-release
       orderBy: { createdAt: "desc" },
       include: {
         items: {
@@ -259,13 +186,8 @@ export async function getUserOrders() {
       }),
       status: order.status,
       payment: order.paymentMethod,
-<<<<<<< HEAD
-      total: order.totalAmount,
-      shippingFee: order.shippingFee,
-=======
       total: toNumber(order.totalAmount),
       shippingFee: toNumber(order.shippingFee),
->>>>>>> client-release
       governorate: order.governorate,
       items: order.items.map((item) => ({
         id: item.productId,
@@ -273,43 +195,23 @@ export async function getUserOrders() {
         image: item.product.images[0] || "",
         size: item.size,
         quantity: item.quantity,
-<<<<<<< HEAD
-        price: item.price,
-=======
         price: toNumber(item.price),
->>>>>>> client-release
       })),
     }));
 
     return { success: true, orders: formattedOrders };
-<<<<<<< HEAD
-  } catch (error: any) {
-    console.error("Fetch Orders Error:", error);
-    return { success: false, message: error.message };
-=======
   } catch (error) {
     console.error("getUserOrders error:", error);
     return {
       success: false,
       message: toPublicMessage(error, "Could not load your orders."),
     };
->>>>>>> client-release
   }
 }
 
 export async function getAllOrders() {
   try {
-<<<<<<< HEAD
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session || session.user.role !== "ADMIN") {
-      return { success: false, message: "Unauthorized Access: Admins only." };
-    }
-=======
     await requireAdmin();
->>>>>>> client-release
 
     const orders = await prisma.order.findMany({
       orderBy: { createdAt: "desc" },
@@ -325,12 +227,6 @@ export async function getAllOrders() {
       },
     });
 
-<<<<<<< HEAD
-    return { success: true, orders };
-  } catch (error) {
-    console.error("Admin Fetch Error:", error);
-    return { success: false, message: "Failed to fetch orders" };
-=======
     const serialized = orders.map((order) => ({
       ...order,
       totalAmount: toNumber(order.totalAmount),
@@ -348,7 +244,6 @@ export async function getAllOrders() {
       success: false,
       message: toPublicMessage(error, "Failed to fetch orders"),
     };
->>>>>>> client-release
   }
 }
 
@@ -357,17 +252,7 @@ export async function updateOrderStatus(
   newStatus: OrderStatusType
 ) {
   try {
-<<<<<<< HEAD
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session || session.user.role !== "ADMIN") {
-      return { success: false, message: "Unauthorized" };
-    }
-=======
     await requireAdmin();
->>>>>>> client-release
 
     const existingOrder = await prisma.order.findUnique({
       where: { id: orderId },
@@ -378,23 +263,6 @@ export async function updateOrderStatus(
       return { success: false, message: "Order not found" };
     }
 
-<<<<<<< HEAD
-    await prisma.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: orderId },
-        data: { status: newStatus },
-      });
-
-      if (newStatus === "CANCELLED" && existingOrder.status !== "CANCELLED") {
-        for (const item of existingOrder.items) {
-          const variant = await tx.productVariant.findFirst({
-            where: { productId: item.productId, volume: item.size },
-          });
-
-          if (variant) {
-            await tx.productVariant.update({
-              where: { id: variant.id },
-=======
     // Enforce the state machine: terminal states can't move, and only the
     // declared transitions are permitted.
     const allowedNext = ALLOWED_TRANSITIONS[existingOrder.status] ?? [];
@@ -419,19 +287,15 @@ export async function updateOrderStatus(
           for (const item of existingOrder.items) {
             await tx.productVariant.updateMany({
               where: { productId: item.productId, volume: item.size },
->>>>>>> client-release
               data: { stock: { increment: item.quantity } },
             });
           }
         }
-<<<<<<< HEAD
-=======
       } else {
         await tx.order.update({
           where: { id: orderId },
           data: { status: newStatus },
         });
->>>>>>> client-release
       }
     });
 
@@ -440,15 +304,10 @@ export async function updateOrderStatus(
 
     return { success: true };
   } catch (error) {
-<<<<<<< HEAD
-    console.error("Update Status Error:", error);
-    return { success: false, message: "Update failed" };
-=======
     console.error("updateOrderStatus error:", error);
     return {
       success: false,
       message: toPublicMessage(error, "Update failed"),
     };
->>>>>>> client-release
   }
 }

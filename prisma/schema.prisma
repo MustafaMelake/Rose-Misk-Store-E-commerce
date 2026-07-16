@@ -56,28 +56,18 @@ model Review {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, productId])
-<<<<<<< HEAD
-=======
   @@index([productId, status])
->>>>>>> client-release
 }
 
 model ProductVariant {
   id        Int     @id @default(autoincrement())
   volume    String
-<<<<<<< HEAD
-  price     Float
-  stock     Int     @default(0)
-  productId Int
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-=======
   price     Decimal @db.Decimal(10, 2)
   stock     Int     @default(0)
   productId Int
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, volume])
->>>>>>> client-release
 }
 
 model Category {
@@ -91,49 +81,32 @@ model Order {
   customerName  String
   customerEmail String
   customerPhone String
-<<<<<<< HEAD
-  governorate   String      @default("")
-  address       String
-  shippingFee   Float       @default(0)
-  totalAmount   Float
-=======
   governorate   String
   address       String
   shippingFee   Decimal     @db.Decimal(10, 2)
   totalAmount   Decimal     @db.Decimal(10, 2)
->>>>>>> client-release
   paymentMethod String      @default("COD")
   status        OrderStatus @default(PENDING)
   items         OrderItem[]
   createdAt     DateTime    @default(now())
   user          User?       @relation(fields: [userId], references: [id])
   userId        String?
-<<<<<<< HEAD
-=======
 
   @@index([userId])
->>>>>>> client-release
 }
 
 model OrderItem {
   id        Int     @id @default(autoincrement())
   quantity  Int
-<<<<<<< HEAD
-  price     Float
-=======
   price     Decimal @db.Decimal(10, 2)
->>>>>>> client-release
   size      String
   orderId   Int
   order     Order   @relation(fields: [orderId], references: [id])
   productId Int
   product   Product @relation(fields: [productId], references: [id])
-<<<<<<< HEAD
-=======
 
   @@index([orderId])
   @@index([productId])
->>>>>>> client-release
 }
 
 enum OrderStatus {
@@ -155,10 +128,7 @@ model CartItem {
   quantity  Int     @default(1)
 
   @@unique([userId, productId, size])
-<<<<<<< HEAD
-=======
   @@index([userId])
->>>>>>> client-release
 }
 
 // ---------------- BETTER AUTH MODELS ----------------
