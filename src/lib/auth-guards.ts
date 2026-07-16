@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { headers } from "next/headers";
 import { auth } from "../../lib/auth";
 
@@ -24,11 +25,15 @@ export class AuthError extends PublicError {
 /**
  * Returns the currently authenticated user, or `null` for guests.
  * Never trust a user id supplied by the client — always derive it here.
+ *
+ * Wrapped in React `cache()` so that a layout, its pages, and any server
+ * actions invoked in the same request share a single `getSession` call
+ * instead of hitting Better Auth once per guard.
  */
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   return session?.user ?? null;
-}
+});
 
 /** Requires an authenticated user. Throws {@link AuthError} otherwise. */
 export async function requireUser() {

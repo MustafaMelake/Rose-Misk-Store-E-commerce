@@ -1,4 +1,3 @@
-import { prisma } from "../../../lib/prisma";
 import {
   Card,
   CardContent,
@@ -8,41 +7,22 @@ import {
 } from "@/components/ui/card";
 import { DollarSign, Package, ShoppingCart, Users, Clock } from "lucide-react";
 import { RevenueChart } from "@/components/admin/RevenueChart";
+import { requireAdmin } from "@/lib/auth-guards";
+import { getDashboardStats } from "../../../lib/actions/dashboard.actions";
 
 export default async function AdminDashboard() {
-  const [totalRevenue, ordersCount, usersCount, pendingOrdersCount] =
-    await Promise.all([
-      prisma.order.aggregate({
-        _sum: { totalAmount: true },
-        where: {
-          status: { in: ["SHIPPED", "DELIVERED"] },
-        },
-      }),
-      prisma.order.count({
-        where: {
-          NOT: { status: "CANCELLED" },
-        },
-      }),
+  // Defense in depth: guard before any data is fetched or the tree renders,
+  // so this page never leaks data even if the parent layout guard changes or
+  // Partial Prerendering renders it in parallel with the layout.
+  await requireAdmin();
 
-      prisma.user.count({ where: { role: "USER" } }),
-      prisma.order.count({ where: { status: "PENDING" } }),
-    ]);
-
-  const rawOrders = await prisma.order.findMany({
-    where: {
-      createdAt: {
-        gte: new Date(new Date().setMonth(new Date().getMonth() - 6)),
-      },
-      status: { in: ["SHIPPED", "DELIVERED"] },
-    },
-    select: { totalAmount: true, createdAt: true },
-  });
-
-  // Serialize Decimal -> number before handing data to a client component.
-  const chartOrders = rawOrders.map((o) => ({
-    totalAmount: Number(o.totalAmount),
-    createdAt: o.createdAt,
-  }));
+  const {
+    totalRevenue,
+    ordersCount,
+    usersCount,
+    pendingOrdersCount,
+    chartOrders,
+  } = await getDashboardStats();
 
   return (
     <div className="flex-1 space-y-6 p-6 pt-2">
@@ -61,7 +41,7 @@ export default async function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Revenue"
-          value={`${Number(totalRevenue._sum.totalAmount ?? 0).toLocaleString()} EGP`}
+          value={`${totalRevenue.toLocaleString()} EGP`}
           icon={<DollarSign className="h-4 w-4 text-gold-500" />}
           description="Confirmed earnings (Shipped & Delivered)"
         />

@@ -1,18 +1,16 @@
-import { auth } from "../../../lib/auth";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Sidebar from "../../components/admin/Sidebar";
+import { getCurrentUser } from "@/lib/auth-guards";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  // Shares the same request-cached session as the page + action guards.
+  const user = await getCurrentUser();
 
-  if (!session || session.user.role !== "ADMIN") {
+  if (!user || user.role !== "ADMIN") {
     redirect("/");
   }
 

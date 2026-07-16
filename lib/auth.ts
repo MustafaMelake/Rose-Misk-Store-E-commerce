@@ -1,6 +1,7 @@
 // lib/auth.ts
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { nextCookies } from "better-auth/next-js";
 import { prisma } from "./prisma";
 import { Resend } from "resend";
 
@@ -8,14 +9,34 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
+// Origins allowed to make authenticated requests (CSRF protection).
+// Always trust local dev; add the app's configured base URL and any extra
+// production domains supplied via TRUSTED_ORIGINS (comma-separated).
+const trustedOrigins = Array.from(
+  new Set(
+    [
+      "http://localhost:3000",
+      process.env.BETTER_AUTH_URL,
+      process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+      ...(process.env.TRUSTED_ORIGINS?.split(",") ?? []),
+    ]
+      .map((origin) => origin?.trim())
+      .filter((origin): origin is string => Boolean(origin))
+  )
+);
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  trustedOrigins,
   user: {
     additionalFields: {
       role: {
-        type: "string",
+        // Literal-array type => Better Auth infers `role` as the strict union
+        // "ADMIN" | "USER" (not a loose `string`) everywhere `$Infer` /
+        // `inferAdditionalFields` is used.
+        type: ["ADMIN", "USER"],
         required: false,
         defaultValue: "USER",
         // Prevent clients from assigning themselves a role during sign-up.
@@ -90,4 +111,7 @@ export const auth = betterAuth({
     window: 60,
     max: 20,
   },
+  // Handles Set-Cookie for auth flows triggered from Next.js Server Actions.
+  // Must remain the LAST plugin in this array.
+  plugins: [nextCookies()],
 });

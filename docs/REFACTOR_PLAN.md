@@ -128,18 +128,18 @@ Every exported function in a `"use server"` file is a **publicly invokable POST 
 
 ### Phase 2 — Auth & Context Hardening
 
-- [ ] Add `requireAdmin()` at the top of **every** admin server component that fetches data directly: `src/app/admin/page.tsx`, `src/app/admin/users/page.tsx` (audit the rest of `src/app/admin/**/page.tsx` for direct Prisma usage while there)
-- [ ] Adopt the rule "auth lives next to the data": move those pages' raw Prisma queries into guarded functions in the actions/DAL layer so the guard is impossible to skip
-- [ ] Wrap `getCurrentUser()` in React `cache()` so layout + page + actions share one `getSession` per request
-- [ ] **Rewrite `proxy.ts`:**
-  - [ ] Fix matcher: drop nonexistent `/checkout`, `/profile`; add `/orders`; keep `/admin/:path*`, `/login`, `/signup`
-  - [ ] Replace cookie-name string checks + self-fetch with `getSessionCookie(request)` from `better-auth/cookies` (optimistic redirect only)
-  - [ ] Remove the per-request `/api/auth/get-session` fetch — the admin layout + per-action `requireAdmin()` are the real boundary (keep proxy role check only if measured latency is acceptable)
-- [ ] **Verify role typing end-to-end:** temporarily enable `strict` and confirm `session.user.role` is `"ADMIN" | "USER"`, not `any`; if the `auth.d.ts` augmentation doesn't merge, replace it with Better Auth's supported inference (`inferAdditionalFields<typeof auth>()` on the client, exported `$Infer.Session` types on the server)
-- [ ] Set explicit `trustedOrigins` (production domain + localhost) in `lib/auth.ts`
-- [ ] Confirm the Better Auth cookie settings for production (secure prefix appears in proxy — validate behind the real domain/HTTPS)
-- [ ] Optional: add `nextCookies()` plugin now to future-proof server-action auth flows
-- [ ] **Gate:** manual checks — guest → `/admin` redirected; USER role → `/admin` redirected; guest → `/orders` redirected; admin flows work; `tsc` ✓; vitest ✓
+- [x] Add `requireAdmin()` at the top of **every** admin server component that fetches data directly: `src/app/admin/page.tsx`, `src/app/admin/users/page.tsx` *(done 2026-07-16: both now `await requireAdmin()` before any fetch. Audited the rest of `src/app/admin/**/page.tsx` — the other data-fetching pages already route through `requireAdmin()`-guarded actions; `products/[id]/edit` uses the intentionally-public `getProductById` and stays behind the layout+proxy guard)*
+- [x] Adopt the rule "auth lives next to the data": move those pages' raw Prisma queries into guarded functions in the actions/DAL layer so the guard is impossible to skip *(done: new `lib/actions/dashboard.actions.ts#getDashboardStats` and `lib/actions/user.actions.ts#getAdminUsers`, each guarded by `requireAdmin()` and serializing Decimal→number at the boundary)*
+- [x] Wrap `getCurrentUser()` in React `cache()` so layout + page + actions share one `getSession` per request *(done: `src/lib/auth-guards.ts`; admin layout now calls the cached `getCurrentUser()` instead of `auth.api.getSession` directly)*
+- [x] **Rewrite `proxy.ts`:**
+  - [x] Fix matcher: drop nonexistent `/checkout`, `/profile`; add `/orders`; keep `/admin/:path*`, `/login`, `/signup` *(also added `/placeorder`)*
+  - [x] Replace cookie-name string checks + self-fetch with `getSessionCookie(request)` from `better-auth/cookies` (optimistic redirect only)
+  - [x] Remove the per-request `/api/auth/get-session` fetch — the admin layout + per-action `requireAdmin()` are the real boundary *(removed entirely; no role check left in the proxy)*
+- [x] **Verify role typing end-to-end:** confirmed `session.user.role` is `"ADMIN" | "USER"`, not `any` *(done via a temporary strict `Equals<…>` type probe covering server `$Infer`, client `authClient.$Infer`, the `SessionUser` re-export, and `getCurrentUser()`'s return — all exactly the union). Root cause was `additionalFields.role.type: "string"` inferring a loose `string`; fixed by declaring `type: ["ADMIN", "USER"]` (literal-array → union). Replaced the non-merging `src/types/auth.d.ts` augmentation with `src/types/auth.ts` (`$Infer` re-exports) and added `inferAdditionalFields<typeof auth>()` to `lib/auth-client.ts`*
+- [x] Set explicit `trustedOrigins` (production domain + localhost) in `lib/auth.ts` *(localhost + `BETTER_AUTH_URL`/`NEXT_PUBLIC_BETTER_AUTH_URL` + comma-separated `TRUSTED_ORIGINS`, de-duplicated)*
+- [ ] Confirm the Better Auth cookie settings for production (secure prefix appears in proxy — validate behind the real domain/HTTPS) — *deferred to production validation; `getSessionCookie` handles the `__Secure-` prefix automatically*
+- [x] Optional: add `nextCookies()` plugin now to future-proof server-action auth flows *(added as the last plugin in `lib/auth.ts`)*
+- [x] **Gate (2026-07-16):** `npx tsc --noEmit` exit 0 ✓ · vitest 56/56 ✓ · role-typing probe ✓. Remaining manual checks (guest → `/admin` redirected; USER → `/admin` redirected; guest → `/orders` redirected; admin flows work) need a running dev server + real sessions
 
 ### Phase 3 — Server Actions & Business Logic
 

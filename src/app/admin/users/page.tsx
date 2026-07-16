@@ -1,5 +1,4 @@
 import React from "react";
-import { prisma } from "../../../../lib/prisma";
 import {
   User,
   Mail,
@@ -8,40 +7,14 @@ import {
   DollarSign,
   Shield,
 } from "lucide-react";
-
-// دالة لجلب المستخدمين مع بيانات طلباتهم
-async function getUsersData() {
-  const users = await prisma.user.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-    include: {
-      orders: {
-        select: {
-          totalAmount: true,
-        },
-      },
-    },
-  });
-
-  // معالجة البيانات لحساب عدد الطلبات وإجمالي المدفوعات لكل مستخدم
-  return users.map((user) => {
-    const totalOrders = user.orders.length;
-    const totalSpent = user.orders.reduce(
-      (sum, order) => sum + Number(order.totalAmount),
-      0
-    );
-
-    return {
-      ...user,
-      totalOrders,
-      totalSpent,
-    };
-  });
-}
+import { requireAdmin } from "@/lib/auth-guards";
+import { getAdminUsers } from "../../../../lib/actions/user.actions";
 
 export default async function AdminUsersPage() {
-  const users = await getUsersData();
+  // Defense in depth: guard at the top of the page, independent of the layout.
+  await requireAdmin();
+
+  const users = await getAdminUsers();
 
   return (
     <div className="flex-1 space-y-2 p-2 pt-1 min-h-screen">
