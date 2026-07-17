@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getApprovedProductReviews } from "@/lib/actions/review.actions";
 import { renderStars } from "@/components/Stars";
 import { MessageSquare, ChevronDown } from "lucide-react";
+import { formatDate } from "@/lib/format";
 
 export default function ProductReviews({ productId }: { productId: number }) {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -70,14 +71,7 @@ export default function ProductReviews({ productId }: { productId: number }) {
                         {review.user?.name || "Verified Customer"}
                       </p>
                       <p className="text-[10px] text-gray-400 uppercase tracking-wider mt-0.5">
-                        {new Date(review.createdAt).toLocaleDateString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          }
-                        )}
+                        {formatDate(review.createdAt)}
                       </p>
                     </div>
                   </div>

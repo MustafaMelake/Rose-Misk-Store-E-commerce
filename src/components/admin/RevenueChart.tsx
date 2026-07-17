@@ -18,6 +18,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/format";
 
 interface RevenueChartProps {
   orders: {
@@ -70,9 +71,10 @@ export function RevenueChart({ orders }: RevenueChartProps) {
     return months;
   }, [orders]);
 
-  // دالة تنسيق العملة
+  // دالة تنسيق العملة — compact ar-EG variant (no fraction digits) for
+  // axis ticks/tooltips; the shared formatCurrency shows 2dp everywhere else.
   const formatEGP = (value: number) =>
-    new Intl.NumberFormat("en-EG", {
+    new Intl.NumberFormat("ar-EG", {
       style: "currency",
       currency: "EGP",
       maximumFractionDigits: 0,
@@ -180,10 +182,7 @@ function CustomTooltip({ active, payload, label }: any) {
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-[#D4AF37]" />
               <span className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
-                {new Intl.NumberFormat("en-EG", {
-                  style: "currency",
-                  currency: "EGP",
-                }).format(revenue)}
+                {formatCurrency(revenue)}
               </span>
             </div>
             <div className="flex items-center gap-2">

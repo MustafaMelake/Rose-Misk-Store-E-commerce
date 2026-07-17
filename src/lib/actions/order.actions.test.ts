@@ -6,7 +6,7 @@ import {
   updateOrderStatus,
 } from "./order.actions";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, AuthError } from "@/lib/auth-guards";
+import { requireAdmin, requireUser, AuthError } from "@/lib/auth-guards";
 import { revalidatePath } from "next/cache";
 
 // 1. Mock Prisma and $transaction
@@ -167,7 +167,23 @@ describe("Order Server Actions", () => {
 
       // Assert — rejected before any DB work
       expect(result.success).toBe(false);
-      expect(result.message).toContain("Card payments are not available");
+      expect(result.message).toContain("الدفع بالبطاقة");
+      expect(prisma.productVariant.updateMany).not.toHaveBeenCalled();
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it("should reject checkout for unauthenticated users", async () => {
+      // Arrange: no session — the auth guard throws
+      vi.mocked(requireUser).mockRejectedValueOnce(
+        new AuthError("غير مصرّح: يجب تسجيل الدخول أولاً.")
+      );
+
+      // Act
+      const result = await createOrder(mockOrderData, mockItems);
+
+      // Assert — rejected before any validation or DB work
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("تسجيل الدخول");
       expect(prisma.productVariant.updateMany).not.toHaveBeenCalled();
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
@@ -349,7 +365,7 @@ describe("Order Server Actions", () => {
 
       // Assert: no writes, clear rejection
       expect(result.success).toBe(false);
-      expect(result.message).toContain("Cannot change order status");
+      expect(result.message).toContain("لا يمكن تغيير حالة الطلب");
       expect(prisma.order.update).not.toHaveBeenCalled();
       expect(prisma.order.updateMany).not.toHaveBeenCalled();
     });

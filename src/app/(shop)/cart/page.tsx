@@ -7,7 +7,7 @@ import { Trash2, Minus, Plus, ShoppingBag } from "lucide-react";
 import Title from "../../../components/Title";
 import CheckOut from "../../../components/CheckOut";
 import Footer from "@/components/Footer";
-import { formatPrice } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 
 interface CartDisplayItem {
   id: number;
@@ -22,8 +22,7 @@ const Cart: React.FC = () => {
   const context = useContext(ShopContext);
   if (!context) return null;
 
-  const { products, currency, cartItems, getPriceBySize, updateQuantity } =
-    context;
+  const { products, cartItems, getPriceBySize, updateQuantity } = context;
   const [cartData, setCartData] = useState<CartDisplayItem[]>([]);
 
   useEffect(() => {
@@ -152,10 +151,7 @@ const Cart: React.FC = () => {
                     </div>
 
                     <p className="text-lg font-bold dark:text-white">
-                      <span className="text-xs font-normal mr-1">
-                        {currency}
-                      </span>
-                      {formatPrice(item.price * item.quantity)}
+                      {formatCurrency(item.price * item.quantity)}
                     </p>
                   </div>
                 </div>

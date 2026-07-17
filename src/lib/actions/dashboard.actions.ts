@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-guards";
+import { REVENUE_STATUSES } from "@/lib/revenue";
 
 /**
  * KPI + 6-month revenue data for the admin dashboard.
@@ -9,8 +10,10 @@ import { requireAdmin } from "@/lib/auth-guards";
  * The query lives here (next to the data) and is gated by `requireAdmin()`
  * so the authorization check is impossible to skip — the page never touches
  * Prisma directly and cannot render even partially without passing the guard.
- * Decimal money values are serialized to plain numbers at this boundary so
- * client components (e.g. the revenue chart) receive JSON-safe data.
+ * Revenue uses the canonical REVENUE_STATUSES set so this KPI always agrees
+ * with the top-sellers page. Decimal money values are serialized to plain
+ * numbers at this boundary so client components (e.g. the revenue chart)
+ * receive JSON-safe data.
  */
 export async function getDashboardStats() {
   await requireAdmin();
@@ -20,7 +23,7 @@ export async function getDashboardStats() {
       prisma.order.aggregate({
         _sum: { totalAmount: true },
         where: {
-          status: { in: ["SHIPPED", "DELIVERED"] },
+          status: { in: REVENUE_STATUSES },
         },
       }),
       prisma.order.count({
@@ -37,7 +40,7 @@ export async function getDashboardStats() {
       createdAt: {
         gte: new Date(new Date().setMonth(new Date().getMonth() - 6)),
       },
-      status: { in: ["SHIPPED", "DELIVERED"] },
+      status: { in: REVENUE_STATUSES },
     },
     select: { totalAmount: true, createdAt: true },
   });

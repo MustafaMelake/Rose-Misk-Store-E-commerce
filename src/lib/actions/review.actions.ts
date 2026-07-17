@@ -17,7 +17,7 @@ export async function submitReview(input: unknown) {
     if (!parsed.success) {
       return {
         success: false,
-        error: parsed.error.issues[0]?.message ?? "Invalid review data.",
+        error: parsed.error.issues[0]?.message ?? "بيانات التقييم غير صالحة.",
       };
     }
     const { productId, rating, comment } = parsed.data;
@@ -35,7 +35,7 @@ export async function submitReview(input: unknown) {
     if (!deliveredPurchase) {
       return {
         success: false,
-        error: "You can only review products from a delivered order.",
+        error: "يمكنك تقييم المنتجات من الطلبات التي تم توصيلها فقط.",
       };
     }
 
@@ -53,19 +53,19 @@ export async function submitReview(input: unknown) {
 
     return {
       success: true,
-      message: "Review submitted and is pending admin approval.",
+      message: "تم إرسال تقييمك وهو قيد مراجعة الإدارة.",
     };
   } catch (error: any) {
     if (error?.code === "P2002") {
       return {
         success: false,
-        error: "You have already submitted a review for this product.",
+        error: "لقد قمت بتقييم هذا المنتج من قبل.",
       };
     }
     console.error("submitReview error:", error);
     return {
       success: false,
-      error: toPublicMessage(error, "Failed to submit review."),
+      error: toPublicMessage(error, "تعذّر إرسال التقييم."),
     };
   }
 }
@@ -104,12 +104,12 @@ export async function approveReview(reviewId: string, productId: number) {
     });
     revalidatePath(`/product/${productId}`);
     revalidatePath(`/admin/reviews`);
-    return { success: true, message: "Review approved successfully." };
+    return { success: true, message: "تم اعتماد التقييم بنجاح." };
   } catch (error) {
     console.error("approveReview error:", error);
     return {
       success: false,
-      error: toPublicMessage(error, "Failed to approve review."),
+      error: toPublicMessage(error, "تعذّر اعتماد التقييم."),
     };
   }
 }
@@ -125,12 +125,12 @@ export async function declineReview(reviewId: string) {
 
     revalidatePath(`/admin/reviews`);
 
-    return { success: true, message: "Review declined." };
+    return { success: true, message: "تم رفض التقييم." };
   } catch (error) {
     console.error("declineReview error:", error);
     return {
       success: false,
-      error: toPublicMessage(error, "Failed to decline review."),
+      error: toPublicMessage(error, "تعذّر رفض التقييم."),
     };
   }
 }

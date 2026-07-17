@@ -1,16 +1,10 @@
 "use server";
 
-import { OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requireAdmin, PublicError, toPublicMessage } from "@/lib/auth-guards";
 import { productCreateSchema, productUpdateSchema } from "@/lib/validations";
-
-/**
- * Order statuses that count toward realized sales/revenue. PENDING and
- * AWAITING_PAYMENT (not paid yet) and CANCELLED are excluded.
- */
-const REVENUE_STATUSES: OrderStatus[] = ["PAID", "SHIPPED", "DELIVERED"];
+import { REVENUE_STATUSES } from "@/lib/revenue";
 
 /**
  * Serialize a product's variant prices from Prisma.Decimal to plain numbers
@@ -44,7 +38,7 @@ export async function getAdminProducts() {
     console.error("Error fetching products:", error);
     return {
       success: false,
-      error: toPublicMessage(error, "Failed to fetch products"),
+      error: toPublicMessage(error, "تعذّر تحميل المنتجات."),
     };
   }
 }
@@ -125,7 +119,7 @@ export async function getProductById(id: string) {
   try {
     const parsedId = parseInt(id);
     if (isNaN(parsedId)) {
-      return { success: false, error: "Invalid Product ID" };
+      return { success: false, error: "معرّف المنتج غير صالح." };
     }
 
     const product = await prisma.product.findUnique({
@@ -148,19 +142,19 @@ export async function getProductById(id: string) {
       },
     });
 
-    if (!product) return { success: false, error: "Product not found" };
+    if (!product) return { success: false, error: "المنتج غير موجود." };
 
     return { success: true, data: serializeProduct(product) };
   } catch (error) {
     console.error("Get Product Error:", error);
-    return { success: false, error: "Database error occurred" };
+    return { success: false, error: "حدث خطأ في قاعدة البيانات." };
   }
 }
 
 export async function updateProduct(id: number, input: unknown) {
   try {
     await requireAdmin();
-    if (isNaN(id)) throw new PublicError("Invalid Product ID");
+    if (isNaN(id)) throw new PublicError("معرّف المنتج غير صالح.");
 
     // Same validation as create (prices, stock, unique volumes, image hosts).
     const parsed = productUpdateSchema.safeParse(input);

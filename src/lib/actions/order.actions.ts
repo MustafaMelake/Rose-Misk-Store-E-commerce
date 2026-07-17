@@ -3,13 +3,13 @@ import { Prisma, type OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { calculateShippingFee } from "@/lib/shipping";
+import { formatDate } from "@/lib/format";
 import {
   orderInputSchema,
   orderItemsInputSchema,
   type OrderItemInput,
 } from "@/lib/validations";
 import {
-  getCurrentUser,
   requireUser,
   requireAdmin,
   PublicError,
@@ -45,9 +45,11 @@ function toNumber(value: Prisma.Decimal | number | null | undefined): number {
 export async function createOrder(orderData: unknown, items: unknown) {
   try {
     // Identity is derived from the session, never from the client.
-    // A null user is a valid guest checkout.
-    const currentUser = await getCurrentUser();
-    const userId = currentUser?.id ?? null;
+    // Checkout requires an authenticated user — this matches the /placeorder
+    // route guard in proxy.ts, so guests are rejected here too (defense in
+    // depth: server actions are public POST endpoints regardless of the UI).
+    const user = await requireUser();
+    const userId = user.id;
 
     // Validate untrusted client input at the boundary. The client-supplied
     // total is intentionally ignored — pricing is recomputed server-side.
@@ -56,7 +58,7 @@ export async function createOrder(orderData: unknown, items: unknown) {
     if (!parsedOrder.success || !parsedItems.success) {
       return {
         success: false,
-        message: "Invalid order details. Please review your information.",
+        message: "بيانات الطلب غير صالحة. برجاء مراجعة معلوماتك.",
       };
     }
     const orderInput = parsedOrder.data;
@@ -80,8 +82,7 @@ export async function createOrder(orderData: unknown, items: unknown) {
     if (orderInput.paymentMethod === "CARD") {
       return {
         success: false,
-        message:
-          "Card payments are not available yet. Please choose Cash on Delivery.",
+        message: "الدفع بالبطاقة غير متاح حالياً. برجاء اختيار الدفع عند الاستلام.",
       };
     }
 
@@ -145,27 +146,22 @@ export async function createOrder(orderData: unknown, items: unknown) {
         totalAmount: finalTotal,
         paymentMethod: orderInput.paymentMethod,
         status: initialStatus,
+        userId,
         items: { create: orderItemsToCreate },
       };
-
-      if (userId) {
-        orderCreationData.userId = userId;
-      }
 
       const newOrder = await tx.order.create({
         data: orderCreationData,
       });
 
-      if (userId) {
-        // Remove ONLY the lines that were just ordered — a partial checkout
-        // must not wipe items the customer left in their cart.
-        await tx.cartItem.deleteMany({
-          where: {
-            userId,
-            OR: orderItems.map((it) => ({ productId: it.id, size: it.size })),
-          },
-        });
-      }
+      // Remove ONLY the lines that were just ordered — a partial checkout
+      // must not wipe items the customer left in their cart.
+      await tx.cartItem.deleteMany({
+        where: {
+          userId,
+          OR: orderItems.map((it) => ({ productId: it.id, size: it.size })),
+        },
+      });
 
       return newOrder;
     });
@@ -179,7 +175,7 @@ export async function createOrder(orderData: unknown, items: unknown) {
       success: false,
       message: toPublicMessage(
         error,
-        "Failed to place your order. Please try again."
+        "تعذّر إتمام طلبك. برجاء المحاولة مرة أخرى."
       ),
     };
   }
@@ -206,11 +202,7 @@ export async function getUserOrders() {
     });
     const formattedOrders = orders.map((order) => ({
       id: order.id,
-      date: order.createdAt.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }),
+      date: formatDate(order.createdAt),
       status: order.status,
       payment: order.paymentMethod,
       total: toNumber(order.totalAmount),
@@ -231,7 +223,7 @@ export async function getUserOrders() {
     console.error("getUserOrders error:", error);
     return {
       success: false,
-      message: toPublicMessage(error, "Could not load your orders."),
+      message: toPublicMessage(error, "تعذّر تحميل طلباتك."),
     };
   }
 }
@@ -269,7 +261,7 @@ export async function getAllOrders() {
     console.error("getAllOrders error:", error);
     return {
       success: false,
-      message: toPublicMessage(error, "Failed to fetch orders"),
+      message: toPublicMessage(error, "تعذّر تحميل الطلبات."),
     };
   }
 }
@@ -287,7 +279,7 @@ export async function updateOrderStatus(
     });
 
     if (!existingOrder) {
-      return { success: false, message: "Order not found" };
+      return { success: false, message: "الطلب غير موجود." };
     }
 
     // Enforce the state machine: terminal states can't move, and only the
@@ -296,7 +288,7 @@ export async function updateOrderStatus(
     if (!allowedNext.includes(newStatus)) {
       return {
         success: false,
-        message: `Cannot change order status from ${existingOrder.status} to ${newStatus}.`,
+        message: `لا يمكن تغيير حالة الطلب من ${existingOrder.status} إلى ${newStatus}.`,
       };
     }
 
@@ -348,7 +340,7 @@ export async function updateOrderStatus(
     console.error("updateOrderStatus error:", error);
     return {
       success: false,
-      message: toPublicMessage(error, "Update failed"),
+      message: toPublicMessage(error, "فشل تحديث حالة الطلب."),
     };
   }
 }

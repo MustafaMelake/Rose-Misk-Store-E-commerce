@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import { PackageOpen, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import { getInventoryProducts } from "@/lib/actions/product.actions";
+import { formatCurrency } from "@/lib/format";
 
 export const metadata = {
   title: "Inventory & Stock | Admin Dashboard",
@@ -107,7 +108,7 @@ export default async function StockPage() {
                       Price:
                     </span>
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      {Number(variant.price)} EGP
+                      {formatCurrency(Number(variant.price))}
                     </span>
                   </div>
 

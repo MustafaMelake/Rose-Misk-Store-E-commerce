@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { requireAdmin } from "@/lib/auth-guards";
 import { getAdminUsers } from "@/lib/actions/user.actions";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 export default async function AdminUsersPage() {
   // Defense in depth: guard at the top of the page, independent of the layout.
@@ -96,11 +97,7 @@ export default async function AdminUsersPage() {
                   <td className="p-4 text-center text-gray-600 dark:text-gray-400">
                     <div className="flex items-center justify-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      {new Date(user.createdAt).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {formatDate(user.createdAt)}
                     </div>
                   </td>
 
@@ -115,7 +112,7 @@ export default async function AdminUsersPage() {
                   {/* Total Spent */}
                   <td className="p-4 text-right font-semibold text-gold-base">
                     <div className="flex items-center justify-end gap-1">
-                      {user.totalSpent.toFixed(2)} EGP
+                      {formatCurrency(user.totalSpent)}
                     </div>
                   </td>
                 </tr>

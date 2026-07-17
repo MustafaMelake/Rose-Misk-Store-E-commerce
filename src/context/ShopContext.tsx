@@ -64,7 +64,6 @@ interface DeliveryData {
 
 export interface ShopContextType {
   products: Product[];
-  currency: string;
   searchOpen: boolean;
   setSearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
   closeSearch: () => void;
@@ -107,8 +106,6 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
   const session = authClient.useSession();
   const userId = session.data?.user.id;
 
-  const currency = "EGP ";
-
   // 1. تحميل المنتجات
   useEffect(() => {
     const fetchAll = async () => {
@@ -126,8 +123,20 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     const initializeCart = async () => {
-      const localData = localStorage.getItem("rose_misk_cart");
-      const localCart = localData ? JSON.parse(localData) : {};
+      // Corrupt localStorage must never break cart init: parse defensively
+      // and drop the stored value if it isn't valid JSON of the right shape.
+      let localCart: CartItems = {};
+      try {
+        const localData = localStorage.getItem("rose_misk_cart");
+        const parsed = localData ? JSON.parse(localData) : {};
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          localCart = parsed;
+        } else {
+          localStorage.removeItem("rose_misk_cart");
+        }
+      } catch {
+        localStorage.removeItem("rose_misk_cart");
+      }
 
       if (userId) {
         if (Object.keys(localCart).length > 0) {
@@ -294,7 +303,6 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
 
   const value = {
     products,
-    currency,
     searchOpen,
     setSearchOpen,
     closeSearch: () => setSearchOpen(false),

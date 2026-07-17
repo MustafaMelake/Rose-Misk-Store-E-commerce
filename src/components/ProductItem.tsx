@@ -3,13 +3,13 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { formatCurrency } from "@/lib/format";
 
 interface ProductItemProps {
   id: number;
   image: string[];
   name: string;
   price: number;
-  currency: string;
   company?: string;
 }
 
@@ -18,7 +18,6 @@ const ProductItem = ({
   image,
   name,
   price,
-  currency,
   company = "ROSE MISK",
 }: ProductItemProps) => {
   const hasImages = image && image.length > 0;
@@ -71,8 +70,7 @@ const ProductItem = ({
         </h3>
 
         <p className="text-sm text-gray-600 dark:text-gray-300 tracking-wide">
-          {currency}{" "}
-          {price.toLocaleString("en-US", { minimumFractionDigits: 0 })}
+          {formatCurrency(price)}
         </p>
       </div>
     </Link>

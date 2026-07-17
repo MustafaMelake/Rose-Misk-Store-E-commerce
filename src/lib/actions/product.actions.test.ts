@@ -87,7 +87,7 @@ describe("Product Server Actions", () => {
       const result = await getAdminProducts();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Failed to fetch products");
+      expect(result.error).toBe("تعذّر تحميل المنتجات.");
     });
   });
 
@@ -156,7 +156,7 @@ describe("Product Server Actions", () => {
       const result = await getProductById("abc");
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Invalid Product ID");
+      expect(result.error).toBe("معرّف المنتج غير صالح.");
       expect(prisma.product.findUnique).not.toHaveBeenCalled();
     });
   });
@@ -209,7 +209,7 @@ describe("Product Server Actions", () => {
     it("should throw an error if the product ID is NaN", async () => {
       const result = await updateProduct(NaN, updateData);
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Invalid Product ID");
+      expect(result.error).toBe("معرّف المنتج غير صالح.");
     });
   });
 

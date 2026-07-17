@@ -42,7 +42,6 @@ const BestSeller = () => {
               image={item.images}
               name={item.name}
               price={minPrice}
-              currency={"EGP"}
             />
           );
         })}

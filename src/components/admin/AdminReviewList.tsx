@@ -7,6 +7,7 @@ import {
 } from "@/lib/actions/review.actions";
 import Image from "next/image";
 import { renderStars } from "@/components/Stars";
+import { formatDate } from "@/lib/format";
 
 export default function AdminReviewList({
   initialReviews,
@@ -74,7 +75,7 @@ export default function AdminReviewList({
               "{review.comment || "No comment provided."}"
             </p>
             <p className="text-[10px] text-gray-400 uppercase">
-              {new Date(review.createdAt).toLocaleDateString()}
+              {formatDate(review.createdAt)}
             </p>
           </div>
 

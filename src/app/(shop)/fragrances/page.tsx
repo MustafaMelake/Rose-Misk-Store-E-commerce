@@ -10,7 +10,7 @@ import { getCategories } from "@/lib/actions/category.actions";
 const Fragrances: React.FC = () => {
   const context = useContext(ShopContext);
   if (!context) return null;
-  const { products, currency } = context;
+  const { products } = context;
 
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
@@ -203,7 +203,6 @@ const Fragrances: React.FC = () => {
               name={item.name}
               image={item.images}
               price={item.variants?.[0]?.price || 0}
-              currency={currency}
             />
           ))}
         </div>

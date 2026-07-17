@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import { authClient } from "@/lib/auth-client";
 import ReviewModal from "@/components/ReviewModal";
 import ProductReviews from "@/components/ProductReviews";
+import { formatCurrency } from "@/lib/format";
 
 interface Variant {
   id: number;
@@ -54,7 +55,7 @@ const ProductDetails: React.FC<{ product: ProductDetail }> = ({ product }) => {
 
   if (!context) return null;
 
-  const { currency, addToCart } = context;
+  const { addToCart } = context;
 
   const sizes = product.variants.map((v) => v.volume);
   const defaultPrice = product.variants?.[0]?.price ?? 0;
@@ -143,8 +144,7 @@ const ProductDetails: React.FC<{ product: ProductDetail }> = ({ product }) => {
                 Current Price
               </p>
               <p className="text-4xl font-bold text-gold-base">
-                {currency}
-                {(currentPrice || 0).toFixed(2)}
+                {formatCurrency(currentPrice || 0)}
               </p>
             </div>
 
@@ -239,7 +239,6 @@ const ProductDetails: React.FC<{ product: ProductDetail }> = ({ product }) => {
                   image={p.images}
                   name={p.name}
                   price={p.variants?.[0]?.price || 0}
-                  currency={currency}
                 />
               ))}
             </div>

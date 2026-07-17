@@ -8,7 +8,7 @@ import {
   ALL_GOVERNORATES,
   calculateShippingFee,
 } from "@/lib/shipping";
-import { formatPrice } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 
 interface CartItem {
   id: number;
@@ -38,7 +38,7 @@ const PlaceOrder: React.FC = () => {
 
   if (!context) return null;
 
-  const { cartItems, products, currency, placeOrder, getPriceBySize } = context;
+  const { cartItems, products, placeOrder, getPriceBySize } = context;
 
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("COD");
@@ -252,24 +252,20 @@ const PlaceOrder: React.FC = () => {
           <div className="space-y-3">
             <div className="flex justify-between text-gray-500 dark:text-gray-400 text-sm">
               <span>Subtotal</span>
-              <span>
-                {currency} {formatPrice(subtotal)}
-              </span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between text-gray-500 dark:text-gray-400 text-sm">
               <span>Shipping Fee</span>
               <span>
                 {dynamicDeliveryFee === 0
                   ? "اختر المحافظة"
-                  : `${currency} ${formatPrice(dynamicDeliveryFee)}`}
+                  : formatCurrency(dynamicDeliveryFee)}
               </span>
             </div>
             <div className="h-[1px] bg-gray-100 dark:bg-zinc-800 my-2"></div>
             <div className="flex justify-between text-lg font-bold text-black dark:text-white">
               <span>Total</span>
-              <span className="text-gold-base">
-                {currency} {formatPrice(total)}
-              </span>
+              <span className="text-gold-base">{formatCurrency(total)}</span>
             </div>
           </div>
 

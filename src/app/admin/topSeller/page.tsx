@@ -5,6 +5,7 @@ import {
   getTopSellingProducts,
   getTopRatedProducts,
 } from "@/lib/actions/product.actions";
+import { formatCurrency } from "@/lib/format";
 
 export const metadata = {
   title: "Top Sellers & Rated | Admin Dashboard",
@@ -82,9 +83,8 @@ export default async function TopSellersPage() {
                   <div className="text-right flex flex-col items-end">
                     <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                       <span className="text-xl font-black">
-                        {product.totalRevenue?.toLocaleString()}
+                        {formatCurrency(product.totalRevenue ?? 0)}
                       </span>
-                      <span className="text-sm font-bold">EGP</span>
                     </div>
                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-1">
                       {product.totalSold} Units Sold

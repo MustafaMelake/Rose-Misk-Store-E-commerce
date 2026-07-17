@@ -16,7 +16,7 @@ export class PublicError extends Error {
 
 /** Thrown when the caller is not authenticated / not authorized. */
 export class AuthError extends PublicError {
-  constructor(message = "Unauthorized: you must be signed in.") {
+  constructor(message = "غير مصرّح: يجب تسجيل الدخول أولاً.") {
     super(message);
     this.name = "AuthError";
   }
@@ -46,7 +46,7 @@ export async function requireUser() {
 export async function requireAdmin() {
   const user = await requireUser();
   if (user.role !== "ADMIN") {
-    throw new AuthError("Unauthorized: admin privileges are required.");
+    throw new AuthError("غير مصرّح: هذه العملية تتطلب صلاحيات المسؤول.");
   }
   return user;
 }
@@ -55,11 +55,12 @@ export async function requireAdmin() {
  * Normalizes any thrown value into a safe, user-facing message.
  * Business/auth errors (PublicError) are passed through; everything else
  * (DB errors, bugs) is masked behind a generic fallback so we never leak
- * raw error strings or stack details to the client.
+ * raw error strings or stack details to the client. User-facing messages
+ * are Arabic-first, matching the storefront's audience.
  */
 export function toPublicMessage(
   error: unknown,
-  fallback = "An unexpected error occurred. Please try again."
+  fallback = "حدث خطأ غير متوقع. برجاء المحاولة مرة أخرى."
 ): string {
   return error instanceof PublicError ? error.message : fallback;
 }

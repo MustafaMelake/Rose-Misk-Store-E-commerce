@@ -5,7 +5,9 @@ import { requireAdmin } from "@/lib/auth-guards";
 
 /**
  * All registered users with per-user order count and lifetime spend, for the
- * admin Customers table.
+ * admin Customers table. CANCELLED orders are excluded from both metrics —
+ * consistent with the dashboard's order count and the canonical revenue rule,
+ * a cancelled order never counts as money spent.
  *
  * Gated by `requireAdmin()` so the guard travels with the data and cannot be
  * bypassed by the page rendering before its parent layout resolves. Decimal
@@ -21,6 +23,9 @@ export async function getAdminUsers() {
     },
     include: {
       orders: {
+        where: {
+          status: { not: "CANCELLED" },
+        },
         select: {
           totalAmount: true,
         },

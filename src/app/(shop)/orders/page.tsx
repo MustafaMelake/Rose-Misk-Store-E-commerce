@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ShopContext } from "../../../context/ShopContext";
 import Title from "../../../components/Title";
 import Footer from "@/components/Footer";
-import { formatPrice } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 
 interface OrderItem {
   id: string | number;
@@ -41,7 +41,7 @@ const Orders: React.FC = () => {
 
   if (!context) return null;
 
-  const { currency, userOrders } = context;
+  const { userOrders } = context;
 
   const normalizeOrderItems = (items: OrderItem[]): NormalizedItem[] => {
     if (Array.isArray(items)) {
@@ -172,19 +172,17 @@ const Orders: React.FC = () => {
                             </p>
                           </div>
                           <p className="sm:hidden font-bold text-gold-base mt-1">
-                            {currency}
-                            {formatPrice(item.price)}
+                            {formatCurrency(item.price)}
                           </p>
                         </div>
 
                         <div className="hidden sm:block text-right">
                           <p className="font-bold text-gold-base">
-                            {currency}
-                            {formatPrice(item.price)}
+                            {formatCurrency(item.price)}
                           </p>
                           <p className="text-xs text-gray-400">
-                            Subtotal: {currency}
-                            {formatPrice(item.price * item.quantity)}
+                            Subtotal:{" "}
+                            {formatCurrency(item.price * item.quantity)}
                           </p>
                         </div>
                       </div>
@@ -214,8 +212,8 @@ const Orders: React.FC = () => {
                       {order.shippingFee !== undefined &&
                         order.shippingFee > 0 && (
                           <p className="text-xs text-gray-400">
-                            Shipping Fee: {currency}
-                            {formatPrice(order.shippingFee ?? 0)}
+                            Shipping Fee:{" "}
+                            {formatCurrency(order.shippingFee ?? 0)}
                           </p>
                         )}
                       <div className="flex items-center gap-2">
@@ -223,8 +221,7 @@ const Orders: React.FC = () => {
                           Grand Total:
                         </span>
                         <p className="font-bold text-xl text-black dark:text-white">
-                          {currency}
-                          {formatPrice(order.total ?? 0)}
+                          {formatCurrency(order.total ?? 0)}
                         </p>
                       </div>
                     </div>

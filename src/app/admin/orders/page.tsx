@@ -7,6 +7,7 @@ import {
   OrderStatusType,
 } from "@/lib/actions/order.actions";
 import { OrderStatus } from "@prisma/client";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -156,7 +157,7 @@ export default function AdminOrdersPage() {
                         #{order.id}
                       </div>
                       <div className="text-xs text-neutral-400 dark:text-neutral-500 mt-2 font-medium tracking-wider">
-                        {new Date(order.createdAt).toLocaleDateString("en-GB")}
+                        {formatDate(order.createdAt)}
                       </div>
                     </td>
 
@@ -215,10 +216,7 @@ export default function AdminOrdersPage() {
                     {/* Total Amount */}
                     <td className="py-6 px-6 align-top">
                       <div className="text-2xl font-black text-black dark:text-white tracking-tight">
-                        {order.totalAmount}{" "}
-                        <span className="text-sm text-neutral-400 font-medium uppercase">
-                          EGP
-                        </span>
+                        {formatCurrency(order.totalAmount)}
                       </div>
                       <div className="inline-block mt-3 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
                         {order.paymentMethod}

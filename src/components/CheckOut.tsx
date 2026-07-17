@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { ShopContext } from "../context/ShopContext";
-import { formatPrice } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 
 const CheckOut: React.FC = () => {
   const context = useContext(ShopContext);
@@ -8,7 +8,7 @@ const CheckOut: React.FC = () => {
   if (!context) return null;
 
   // شلنا استدعاء delivery_fee و total لأن حسابهم النهائي هيتم في شاشة الدفع
-  const { currency, subtotal, goToCheckout } = context;
+  const { subtotal, goToCheckout } = context;
 
   return (
     <div className="p-6 border rounded-xl shadow-sm h-fit flex flex-col gap-4 bg-white dark:bg-zinc-900 dark:border-zinc-800">
@@ -16,10 +16,7 @@ const CheckOut: React.FC = () => {
 
       <div className="flex justify-between dark:text-gray-300">
         <span>Subtotal:</span>
-        <span className="font-medium">
-          {currency}
-          {formatPrice(subtotal)}
-        </span>
+        <span className="font-medium">{formatCurrency(subtotal)}</span>
       </div>
 
       <div className="flex justify-between dark:text-gray-300 items-center">
@@ -38,10 +35,7 @@ const CheckOut: React.FC = () => {
             Excludes Delivery
           </span>
         </div>
-        <span>
-          {currency}
-          {formatPrice(subtotal)}
-        </span>
+        <span>{formatCurrency(subtotal)}</span>
       </div>
 
       <button

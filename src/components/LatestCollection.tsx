@@ -47,7 +47,6 @@ const LatestCollection = () => {
                 image={item.images} // مصفوفة الصور كاملة
                 name={item.name}
                 price={minPrice}
-                currency="EGP"
               />
             );
           })

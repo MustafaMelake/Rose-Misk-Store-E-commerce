@@ -9,6 +9,7 @@ import { DollarSign, Package, ShoppingCart, Users, Clock } from "lucide-react";
 import { RevenueChart } from "@/components/admin/RevenueChart";
 import { requireAdmin } from "@/lib/auth-guards";
 import { getDashboardStats } from "@/lib/actions/dashboard.actions";
+import { formatCurrency } from "@/lib/format";
 
 export default async function AdminDashboard() {
   // Defense in depth: guard before any data is fetched or the tree renders,
@@ -41,9 +42,9 @@ export default async function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Revenue"
-          value={`${totalRevenue.toLocaleString()} EGP`}
+          value={formatCurrency(totalRevenue)}
           icon={<DollarSign className="h-4 w-4 text-gold-500" />}
-          description="Confirmed earnings (Shipped & Delivered)"
+          description="Confirmed earnings (Paid, Shipped & Delivered)"
         />
         <StatsCard
           title="Total Sales"

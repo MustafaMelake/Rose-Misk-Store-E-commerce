@@ -80,7 +80,7 @@ describe("Review Server Actions", () => {
         },
       });
       expect(result.success).toBe(true);
-      expect(result.message).toContain("pending admin approval");
+      expect(result.message).toContain("قيد مراجعة الإدارة");
     });
 
     it("should store a null comment when none is provided (nullable comment)", async () => {
@@ -107,10 +107,10 @@ describe("Review Server Actions", () => {
       const resultHigh = await submitReview({ ...validPayload, rating: 6 });
 
       expect(resultLow.success).toBe(false);
-      expect(resultLow.error).toBe("Rating must be between 1 and 5.");
+      expect(resultLow.error).toBe("التقييم يجب أن يكون بين 1 و 5.");
 
       expect(resultHigh.success).toBe(false);
-      expect(resultHigh.error).toBe("Rating must be between 1 and 5.");
+      expect(resultHigh.error).toBe("التقييم يجب أن يكون بين 1 و 5.");
 
       expect(prisma.review.create).not.toHaveBeenCalled();
     });
@@ -122,7 +122,7 @@ describe("Review Server Actions", () => {
       const result = await submitReview(validPayload);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain("delivered order");
+      expect(result.error).toContain("تم توصيلها");
       expect(prisma.review.create).not.toHaveBeenCalled();
     });
 
@@ -137,9 +137,7 @@ describe("Review Server Actions", () => {
       const result = await submitReview(validPayload);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe(
-        "You have already submitted a review for this product."
-      );
+      expect(result.error).toBe("لقد قمت بتقييم هذا المنتج من قبل.");
     });
   });
 
@@ -192,7 +190,7 @@ describe("Review Server Actions", () => {
       const result = await approveReview("rev_1", 100);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("Failed to approve review.");
+      expect(result.error).toBe("تعذّر اعتماد التقييم.");
     });
   });
 
