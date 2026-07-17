@@ -17,11 +17,15 @@
 | `/cart` | Public | Everyone (guest cart in `localStorage`) | — |
 | `/about`, `/contact` | Public | Everyone | — |
 | `/login`, `/signup` | Public | Signed-out only | `proxy.ts` redirects signed-in users → `/` |
-| `/placeorder` | Protected | Authenticated | `proxy.ts` cookie check → `/login`; `createOrder` re-checks `requireUser()` |
-| `/orders` | Protected | Authenticated | `proxy.ts` cookie check → `/login`; `getUserOrders` re-checks `requireUser()` |
-| `/admin/**` | Protected | `ADMIN` only | `proxy.ts` + `admin/layout.tsx` (`getCurrentUser`) + per-page/per-action `requireAdmin()` |
+| `/verify-email` | Public | Everyone | — (post-signup landing + resend) |
+| `/forgot-password`, `/reset-password` | Public | Everyone | — (Better Auth reset flow) |
+| `/unauthorized` | Public | Everyone | — (RBAC access-denied landing) |
+| `/order-confirmation/[id]` | Public | Everyone (details owner-scoped) | — (post-checkout receipt; shows details only for the viewer's own order) |
+| `/placeorder` | Protected | Authenticated | `proxy.ts` cookie check → `/login?callbackUrl=…`; `createOrder` re-checks `requireUser()` |
+| `/orders` | Protected | Authenticated | `proxy.ts` cookie check → `/login?callbackUrl=…`; `getUserOrders` re-checks `requireUser()` |
+| `/admin/**` | Protected | `ADMIN` only | `proxy.ts` + `admin/layout.tsx` (guest → `/login?callbackUrl=/admin`; non-admin → `/unauthorized`) + per-page/per-action `requireAdmin()` |
 
-The **middleware** ([src/proxy.ts](../src/proxy.ts)) performs an *optimistic* cookie check only — it never trusts it as authorization. The real boundary is always the server-side guard in the action or page (see the architecture doc, §Auth). This is why `/placeorder` is protected at **two** layers: the middleware redirect for UX, and `requireUser()` inside `createOrder` for security.
+The **middleware** ([src/proxy.ts](../src/proxy.ts)) performs an *optimistic* cookie check only — it never trusts it as authorization. The real boundary is always the server-side guard in the action or page (see the architecture doc, §Auth). This is why `/placeorder` is protected at **two** layers: the middleware redirect for UX, and `requireUser()` inside `createOrder` for security. When the middleware bounces a guest off a protected route, it appends the intended path as `?callbackUrl=…` so login can return them there (see §1.4).
 
 ---
 
@@ -80,6 +84,10 @@ try {
 - **Add** (`addToCart`): optimistic client update, capped by the loaded variant `stock` (if the variant is loaded; if not, the server still enforces stock at checkout). When signed in, it mirrors the new quantity to the DB.
 - **Update** (`updateQuantity`): quantity `≤ 0` removes the line; otherwise the requested quantity is clamped to available stock. Signed-in users mirror the final quantity to the DB.
 - **Server clamp:** `updateCartInDB` accepts `quantity` in `[0, MAX_CART_QTY]` (20). `0` deletes the line; anything higher is rejected by the schema.
+- **Stock-ceiling feedback (G13):** hitting the stock limit is no longer a silent no-op. The product page (`ProductDetails`) shows *"الحد المتاح N قطعة فقط في المخزون"* when a further "Add" would exceed stock, and the cart page shows an amber notice when the "+" button is capped.
+
+#### Checkout-time reconciliation (G10)
+If stock drops between adding to cart and checking out, `createOrder` fails with `reason: "insufficient_stock"`. `ShopContext.placeOrder` then calls `reconcileCartWithStock()`: it pulls fresh product stock, **clamps every cart line to what's actually available** (dropping now-unavailable lines), and syncs the DB cart for signed-in users. The shopper sees *"…وتم تحديث سلتك…"* and can immediately retry with a valid cart instead of being stuck.
 
 #### The merge & duplicate-handling logic (login reconciliation)
 When a guest signs in with items already in their `localStorage` cart, `ShopContext` runs `mergeCartAction(localCart)` **before** loading the server cart:
@@ -96,17 +104,56 @@ The net effect: **no items are silently lost at login**, duplicates are summed r
 
 ### 1.3 Checkout
 
-**Precondition:** checkout requires authentication. A guest who reaches `/placeorder` is redirected to `/login` by the middleware, and even a direct `createOrder` call is rejected server-side.
+**Precondition:** checkout requires authentication. A guest who reaches `/placeorder` is redirected to `/login?callbackUrl=/placeorder` by the middleware (returning them to checkout after sign-in, §1.4), and even a direct `createOrder` call is rejected server-side.
 
 1. **`/placeorder`** renders the delivery form and a live order summary. Selecting a governorate recomputes the shipping fee client-side via `calculateShippingFee` (Cairo/Giza = 75, Upper Egypt = 115, everywhere else = 85 EGP). Until a governorate is chosen, the fee area shows `اختر المحافظة` ("choose the governorate"); once chosen it renders `formatCurrency(fee)`.
-2. **Payment method:** `COD` (Cash on Delivery) is the only live method. `CARD` is selectable in the UI but explicitly rejected server-side with `الدفع بالبطاقة غير متاح حالياً. برجاء اختيار الدفع عند الاستلام.` — no un-payable order is ever created.
+2. **Payment method:** `COD` (Cash on Delivery) is the **only** method — presented as a fixed method card, not a choice (G6). No `CARD` option exists in the UI. `createOrder` still defensively rejects a directly-POSTed `CARD` payload, so no un-payable order can be created out-of-band.
 3. **Submit** → `ShopContext.placeOrder()` flattens the cart into `{ id, size, quantity }[]`, builds the order payload, and calls `createOrder(orderPayload, items)`.
 4. **Server truth (see architecture doc §Order Pipeline for detail):** the client-supplied total is **ignored**. The server re-derives prices from the DB, atomically decrements stock per variant, applies the shipping fee, and creates the order at status `PENDING`. Only the cart lines that were actually ordered are deleted — a partial checkout leaves the rest of the cart intact.
 5. **Result:**
-   - Success → `{ success: true, orderId }`. The context clears the cart, refreshes order history, and the UI advances to a confirmation.
-   - Failure → `{ success: false, message }` with an Arabic message (invalid data, out-of-stock, card rejected, or the generic fallback), surfaced to the shopper.
+   - Success → `{ success: true, orderId }`. The context clears the cart, refreshes order history, and the shopper is redirected to **`/order-confirmation/[orderId]`** — a durable receipt page (order number, date, item count, total) with links to track orders or keep shopping (G12). This replaced the old transient `alert()`.
+   - Failure → surfaced **inline** (no more `alert`): a form-level banner plus per-field messages under the offending inputs (G11), driven by the server's structured `{ message, fieldErrors, reason }`.
+     - **Validation failure** → `fieldErrors` (Arabic, keyed by `customerName` / `customerEmail` / `customerPhone` / `governorate` / `address`) render under the matching inputs.
+     - **Insufficient stock** (`reason: "insufficient_stock"`) → the cart is **auto-reconciled** to available stock before the message shows, so the shopper isn't stuck (G10; see §1.2).
 
 **Guest-checkout cohesion note:** the earlier ambiguity (server allowed `null` users while the middleware blocked `/placeorder`) is resolved — `createOrder` now begins with `requireUser()`, so the authenticated-only intent is enforced identically at the UI redirect layer and the server action layer.
+
+---
+
+### 1.4 Account Lifecycle — sign-up, verification, password recovery & return paths
+
+This section covers the authentication edges (added in Phase 6, Batch 1). All screens are Arabic-first, RTL.
+
+#### Sign-up → email verification
+1. `/signup` calls `authClient.signUp.email(...)`. On success the user is routed to **`/verify-email?email=…`** (no longer dumped silently on the home page).
+2. `/verify-email` reconciles two realities using the live session:
+   - **Verification required** (a mailer is configured) → sign-up created **no** session → the page shows a *"check your inbox"* state for `{email}` with a **Resend** button (`authClient.sendVerificationEmail`).
+   - **Verification not required** (no mailer configured — see the graceful-degradation note below) → sign-up already created a session → the page shows an *"account ready"* state with links to the store and to `/orders`.
+3. Clicking the link in the email verifies the address and (via `autoSignInAfterVerification`) signs the user in, landing them back on `/verify-email` in the "account ready" state.
+
+#### Graceful degradation when email isn't configured
+The system **never silently locks a user out**. If `RESEND_API_KEY` is absent, mandatory verification is switched **off** at the server (`requireEmailVerification` is gated on the mailer existing), so a freshly-registered account is immediately usable. `/verify-email` and `/forgot-password` additionally read the optional `NEXT_PUBLIC_EMAIL_ENABLED` flag; when it is `"false"` they display a clear localized note that email delivery is inactive in this environment, rather than promising a mail that will never arrive.
+
+#### Login "email not verified" recovery
+When a mailer *is* configured and a user tries to sign in before verifying, `/login` distinguishes the Better Auth `EMAIL_NOT_VERIFIED` / `403` case from bad credentials: it shows *"لم يتم تأكيد بريدك الإلكتروني بعد…"* plus a **"تأكيد البريد الإلكتروني"** link back to `/verify-email?email=…`. Genuine credential errors still show the generic *"البريد الإلكتروني أو كلمة المرور غير صحيحة"*.
+
+#### Forgot / reset password
+1. The `/login` "Forgot?" link now resolves to **`/forgot-password`** (previously a 404).
+2. `/forgot-password` calls `authClient.requestPasswordReset({ email, redirectTo: "/reset-password" })`. To prevent account enumeration, the UI **always** shows the same *"check your inbox"* confirmation regardless of whether the address exists.
+3. The emailed link opens **`/reset-password?token=…`**, which validates the two password fields (≥ 8 chars, matching), calls `authClient.resetPassword({ newPassword, token })`, then redirects to `/login?reset=success`. An absent/invalid token shows a localized *"رابط غير صالح"* state with a link back to request a new one.
+4. `/login?reset=success` renders a green *"تم تحديث كلمة المرور بنجاح…"* banner.
+
+#### Return-path (`callbackUrl`) after a login wall
+When the middleware bounces a guest off a protected route, it appends `?callbackUrl=<original-path>`. On successful sign-in (email **or** social), `/login` reads that param, **sanitizes it** (only internal absolute paths are accepted — protocol-relative `//host` and backslash tricks are rejected to prevent open redirects), and returns the user there instead of always dumping them on `/`. A guest who clicks "My Orders" now lands back on `/orders` after logging in.
+
+#### RBAC boundary landing
+A signed-in **non-admin** who hits any `/admin/**` route is redirected by `admin/layout.tsx` to the localized **`/unauthorized`** page (explanation + CTAs to the store and to `/orders`) — no longer a silent bounce to `/`. A **guest** hitting `/admin/**` is sent to `/login?callbackUrl=/admin`.
+
+### 1.5 Contact
+
+The `/contact` form is now backed by a real server action (G4) — it no longer `console.log`s and fakes a success alert. Submitting calls `sendContactMessage(formData)`, which validates the payload (`contactInputSchema`: name, reply-to email, message) and delivers it to the store inbox (`CONTACT_TO`) via Resend, with the visitor's address set as `replyTo`. The form shows a genuine success or error state:
+- **Delivered** → *"تم إرسال رسالتك بنجاح! سنتواصل معك قريباً."*
+- **No mailer configured** → an honest *"خدمة إرسال الرسائل غير متاحة حالياً…"* directing the visitor to WhatsApp/email, rather than a false "sent" confirmation.
 
 ---
 
@@ -218,18 +265,19 @@ export function toPublicMessage(
 
 ## 4. Order Lifecycle — the Client's View
 
-Orders are created at `PENDING` and move through a server-enforced state machine (full transition table in the architecture doc). Here is what the **customer** experiences at each state, as rendered by `/orders` (`getUserOrders`). Status labels are humanized in the UI (`formatStatus`), amounts use `formatCurrency`, and dates use `formatDate`.
+Orders are created at `PENDING` and move through a server-enforced state machine (full transition table in the architecture doc). Under the **COD-only lifecycle** an order travels `PENDING → SHIPPED → DELIVERED`, with `CANCELLED` reachable from any non-terminal state. `AWAITING_PAYMENT` and `PAID` are **legacy** payment-gateway states that new orders can no longer enter and that the admin can no longer set (G2/G3); the customer view keeps a defensive label for them only so any historical order still renders. Status labels are humanized in the UI (`formatStatus`), amounts use `formatCurrency`, and dates use `formatDate`.
 
 | Status | Customer sees | Meaning | Can review? |
 |---|---|---|---|
 | `PENDING` | Amber dot · "Pending" | Order placed (COD), awaiting processing | No |
-| `AWAITING_PAYMENT` | Amber dot · "Awaiting Payment" | Reserved for future gateway flows | No |
-| `PAID` | Green dot · "Paid" | Payment captured | No |
 | `SHIPPED` | Blue dot · "Shipped" | On its way | No |
 | `DELIVERED` | Green dot · "Delivered" | Received — **unlocks reviewing** | **Yes** |
 | `CANCELLED` | Red dot · "Cancelled" | Cancelled; stock restocked server-side | No |
+| `AWAITING_PAYMENT` / `PAID` | (legacy) Amber/Green dot | Only on historical orders; unreachable for new ones | No |
 
 Each order card shows its number, `formatDate(createdAt)`, per-item name/image/size/quantity/price, the shipping fee (when > 0), the payment method, and the grand total — all currency via `formatCurrency`.
+
+**Live status visibility (G1).** `/orders` no longer shows a stale snapshot. `ShopContext` exposes a memoized `refreshOrders()`, and the page refetches on **mount**, on **window focus / tab visibility**, and on a light **30-second interval** while open. So when an admin flips an order to `SHIPPED`/`DELIVERED`/`CANCELLED`, the customer sees it without a manual reload.
 
 ### 4.1 The review submission process (client view)
 
@@ -263,5 +311,18 @@ Every customer interaction resolves to a Zod-validated, guarded server action. T
 | View order history | `getUserOrders` | `requireUser` | — (read-only) |
 | Submit review | `submitReview` | `requireUser` | `reviewInputSchema` + delivered-purchase check |
 | Read product reviews | `getApprovedProductReviews` | Public | `APPROVED`-only filter |
+| Send contact message | `sendContactMessage` | Public | `contactInputSchema`; Resend delivery (honest degradation) |
 
-**Zero orphaned interactions:** there is no storefront mutation that reaches Prisma without passing through a guarded, validated action.
+**Zero orphaned interactions:** there is no storefront mutation that reaches Prisma without passing through a guarded, validated action. (The unused `clearUserCart` action was deleted in Batch 3 — G8.)
+
+### 5.1 Authentication interactions (Better Auth endpoints)
+
+The account-lifecycle screens (§1.4) call Better Auth's own hardened endpoints rather than bespoke server actions. Identity, tokens, and rate-limiting are enforced by Better Auth; the app configures the mailers server-side in [src/lib/auth.ts](../src/lib/auth.ts).
+
+| User interaction | Client call | Server behaviour |
+|---|---|---|
+| Sign up | `authClient.signUp.email` | Creates the user; sends verification when a mailer is configured (else account is immediately usable) |
+| Sign in | `authClient.signIn.email` / `.social` | Rejects unverified emails (when mailer on) with `EMAIL_NOT_VERIFIED`; returns to sanitized `callbackUrl` |
+| Resend verification | `authClient.sendVerificationEmail` | Re-issues the verification link |
+| Request password reset | `authClient.requestPasswordReset` | `emailAndPassword.sendResetPassword` mails a tokenized `/reset-password` link (no-op + warn if no mailer) |
+| Complete password reset | `authClient.resetPassword` | Consumes the token, sets the new password |

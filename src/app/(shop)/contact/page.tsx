@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
+import { sendContactMessage } from "@/lib/actions/contact.actions";
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,10 @@ const Contact: React.FC = () => {
     email: "",
     message: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(
+    null
+  );
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -18,11 +23,27 @@ const Contact: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form Submitted:", formData);
-    alert("Thank you! Your message has been sent.");
-    setFormData({ name: "", email: "", message: "" });
+    setLoading(true);
+    setStatus(null);
+
+    // Real server action (Resend) — no more fake console.log success (G4).
+    const result = await sendContactMessage(formData);
+    setLoading(false);
+
+    if (result.success) {
+      setStatus({
+        ok: true,
+        text: "تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.",
+      });
+      setFormData({ name: "", email: "", message: "" });
+    } else {
+      setStatus({
+        ok: false,
+        text: result.error || "تعذّر إرسال رسالتك. برجاء المحاولة لاحقاً.",
+      });
+    }
   };
 
   const itemVariants = {
@@ -94,14 +115,28 @@ const Contact: React.FC = () => {
               ></textarea>
 
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: loading ? 1 : 1.02 }}
+                whileTap={{ scale: loading ? 1 : 0.98 }}
                 type="submit"
-                className="py-3 mt-2 bg-black dark:bg-gold-base text-white dark:text-black rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gold-base hover:text-black dark:hover:bg-gold-light-20 transition-all duration-300 shadow-lg"
+                disabled={loading}
+                className="py-3 mt-2 bg-black dark:bg-gold-base text-white dark:text-black rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gold-base hover:text-black dark:hover:bg-gold-light-20 transition-all duration-300 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Send size={18} />
-                Send Message
+                {loading ? "جارٍ الإرسال..." : "Send Message"}
               </motion.button>
+
+              {status && (
+                <p
+                  dir="rtl"
+                  className={`text-sm text-center p-3 rounded-xl border ${
+                    status.ok
+                      ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30"
+                      : "bg-red-50 dark:bg-red-900/20 text-red-500 border-red-100 dark:border-red-900/30"
+                  }`}
+                >
+                  {status.text}
+                </p>
+              )}
             </form>
           </motion.div>
 

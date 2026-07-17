@@ -155,6 +155,21 @@ describe("Order Server Actions", () => {
       // Assert
       expect(result.success).toBe(false);
       expect(result.message).toContain("غير متوفر بالكمية المطلوبة");
+      // Flagged as stock-related so the client can reconcile the cart (G10)
+      expect(result.reason).toBe("insufficient_stock");
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it("should return Arabic per-field errors for invalid input (G11)", async () => {
+      // Empty name + malformed email; governorate stays valid.
+      const result = await createOrder(
+        { ...mockOrderData, customerName: "", customerEmail: "not-an-email" },
+        mockItems
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.fieldErrors?.customerName).toBeTruthy();
+      expect(result.fieldErrors?.customerEmail).toBeTruthy();
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
 

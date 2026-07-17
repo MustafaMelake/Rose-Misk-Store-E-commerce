@@ -27,10 +27,16 @@ export type OrderStatusType =
 /**
  * Allowed order status transitions. DELIVERED and CANCELLED are terminal —
  * no further changes are permitted once an order reaches them.
+ *
+ * COD-only lifecycle: PENDING → SHIPPED → DELIVERED, with CANCELLED reachable
+ * at any non-terminal point. AWAITING_PAYMENT and PAID are legacy
+ * payment-gateway states that new orders can no longer enter (G2/G3); they are
+ * kept as source keys purely so any historical order still sitting in one of
+ * them can be moved forward or cancelled.
  */
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatusType[]> = {
-  PENDING: ["AWAITING_PAYMENT", "PAID", "SHIPPED", "DELIVERED", "CANCELLED"],
-  AWAITING_PAYMENT: ["PAID", "PENDING", "SHIPPED", "CANCELLED"],
+  PENDING: ["SHIPPED", "DELIVERED", "CANCELLED"],
+  AWAITING_PAYMENT: ["SHIPPED", "DELIVERED", "CANCELLED"],
   PAID: ["SHIPPED", "DELIVERED", "CANCELLED"],
   SHIPPED: ["DELIVERED", "CANCELLED"],
   DELIVERED: [],
@@ -42,7 +48,40 @@ function toNumber(value: Prisma.Decimal | number | null | undefined): number {
   return value == null ? 0 : Number(value);
 }
 
-export async function createOrder(orderData: unknown, items: unknown) {
+/**
+ * Thrown inside the order transaction when a line can't be fulfilled from
+ * stock. A distinct subclass (still a PublicError, so its Arabic message is
+ * safe to surface) lets the caller flag the failure as stock-related, which
+ * drives client-side cart reconciliation (G10).
+ */
+class InsufficientStockError extends PublicError {}
+
+/** Arabic, per-field messages for checkout validation failures (G11), keyed by
+ *  the order-input field name that Zod reports. */
+const ORDER_FIELD_MESSAGES: Record<string, string> = {
+  customerName: "برجاء إدخال الاسم كاملاً.",
+  customerEmail: "برجاء إدخال بريد إلكتروني صحيح.",
+  customerPhone: "برجاء إدخال رقم هاتف صحيح.",
+  governorate: "برجاء اختيار المحافظة.",
+  address: "برجاء إدخال عنوان التوصيل.",
+  paymentMethod: "طريقة الدفع غير صالحة.",
+};
+
+export interface CreateOrderResult {
+  success: boolean;
+  orderId?: number;
+  message?: string;
+  /** Present when the failure was caused by insufficient stock, so the client
+   *  can reconcile the cart to what is actually available (G10). */
+  reason?: "insufficient_stock";
+  /** Per-field Arabic messages keyed by order-input field name (G11). */
+  fieldErrors?: Record<string, string>;
+}
+
+export async function createOrder(
+  orderData: unknown,
+  items: unknown
+): Promise<CreateOrderResult> {
   try {
     // Identity is derived from the session, never from the client.
     // Checkout requires an authenticated user — this matches the /placeorder
@@ -56,9 +95,19 @@ export async function createOrder(orderData: unknown, items: unknown) {
     const parsedOrder = orderInputSchema.safeParse(orderData);
     const parsedItems = orderItemsInputSchema.safeParse(items);
     if (!parsedOrder.success || !parsedItems.success) {
+      // Map Zod's field errors to Arabic, per-field messages the checkout form
+      // can render under the offending inputs (G11).
+      const fieldErrors: Record<string, string> = {};
+      if (!parsedOrder.success) {
+        const flat = parsedOrder.error.flatten().fieldErrors;
+        for (const key of Object.keys(flat)) {
+          if (ORDER_FIELD_MESSAGES[key]) fieldErrors[key] = ORDER_FIELD_MESSAGES[key];
+        }
+      }
       return {
         success: false,
-        message: "بيانات الطلب غير صالحة. برجاء مراجعة معلوماتك.",
+        message: "بيانات الطلب غير صالحة. برجاء مراجعة الحقول المطلوبة.",
+        fieldErrors,
       };
     }
     const orderInput = parsedOrder.data;
@@ -97,7 +146,7 @@ export async function createOrder(orderData: unknown, items: unknown) {
         });
 
         if (!variant) {
-          throw new PublicError(
+          throw new InsufficientStockError(
             `المنتج ذو الحجم ${item.size} غير متوفر بالكمية المطلوبة.`
           );
         }
@@ -111,7 +160,7 @@ export async function createOrder(orderData: unknown, items: unknown) {
         });
 
         if (updated.count === 0) {
-          throw new PublicError(
+          throw new InsufficientStockError(
             `المنتج ذو الحجم ${item.size} غير متوفر بالكمية المطلوبة.`
           );
         }
@@ -171,6 +220,14 @@ export async function createOrder(orderData: unknown, items: unknown) {
     return { success: true, orderId: result.id };
   } catch (error) {
     console.error("createOrder error:", error);
+    // Flag stock failures so the client can auto-reconcile the cart (G10).
+    if (error instanceof InsufficientStockError) {
+      return {
+        success: false,
+        message: error.message,
+        reason: "insufficient_stock",
+      };
+    }
     return {
       success: false,
       message: toPublicMessage(

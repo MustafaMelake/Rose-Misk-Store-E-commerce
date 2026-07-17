@@ -58,11 +58,10 @@ export default function AdminOrdersPage() {
     return order.status === filterStatus;
   });
 
-  // 3. خيارات الفلترة المتاحة
+  // 3. خيارات الفلترة المتاحة (COD-only lifecycle: no AWAITING_PAYMENT / PAID)
   const filterOptions: (OrderStatus | "ALL")[] = [
     "ALL",
     "PENDING",
-    "PAID",
     "SHIPPED",
     "DELIVERED",
     "CANCELLED",
@@ -242,14 +241,23 @@ export default function AdminOrdersPage() {
                           }`}
                         >
                           <option value="PENDING">PENDING</option>
-                          {/* تم إضافة حالة AWAITING_PAYMENT هنا أيضاً لتطابق الـ Schema */}
-                          <option value="AWAITING_PAYMENT">
-                            AWAITING PAYMENT
-                          </option>
-                          <option value="PAID">PAID</option>
                           <option value="SHIPPED">SHIPPED</option>
                           <option value="DELIVERED">DELIVERED</option>
                           <option value="CANCELLED">CANCELLED</option>
+                          {/* COD-only lifecycle: AWAITING_PAYMENT / PAID removed
+                              (unreachable). A legacy order still in one of those
+                              states keeps a matching option so the <select>
+                              renders its real value. */}
+                          {![
+                            "PENDING",
+                            "SHIPPED",
+                            "DELIVERED",
+                            "CANCELLED",
+                          ].includes(order.status) && (
+                            <option value={order.status}>
+                              {String(order.status).replace("_", " ")}
+                            </option>
+                          )}
                         </select>
                         <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                           <svg

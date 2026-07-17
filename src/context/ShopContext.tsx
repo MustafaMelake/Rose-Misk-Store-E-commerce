@@ -2,6 +2,7 @@
 
 import React, {
   createContext,
+  useCallback,
   useMemo,
   useState,
   ReactNode,
@@ -83,9 +84,16 @@ export interface ShopContextType {
     paymentMethod: string,
     formData: DeliveryData,
     total: number
-  ) => Promise<{ success: boolean; orderId?: number; message?: string }>;
+  ) => Promise<{
+    success: boolean;
+    orderId?: number;
+    message?: string;
+    reason?: string;
+    fieldErrors?: Record<string, string>;
+  }>;
   userOrders: Order[];
   setUserOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  refreshOrders: () => Promise<void>;
   getPriceBySize: (productId: string | number, size: string) => number;
 }
 
@@ -245,17 +253,56 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
     return sum;
   }, [cartItems, products]);
 
-  const fetchUserOrders = async () => {
+  // Memoized so consumers (e.g. the /orders page) can safely depend on it for
+  // focus/interval refresh without re-subscribing every render (G1).
+  const refreshOrders = useCallback(async () => {
     if (userId) {
       const result = await getUserOrders();
       if (result.success && result.orders) {
         setUserOrders(result.orders);
       }
     }
-  };
-  useEffect(() => {
-    fetchUserOrders();
   }, [userId]);
+  useEffect(() => {
+    refreshOrders();
+  }, [refreshOrders]);
+
+  // G10 — when the server rejects checkout for insufficient stock, pull fresh
+  // product stock and clamp every cart line to what's actually available
+  // (dropping now-unavailable lines), so the shopper isn't stuck retrying an
+  // impossible quantity. Signed-in users' DB cart is synced to match.
+  const reconcileCartWithStock = async () => {
+    const data = await getAllProducts(1, 100);
+    const fresh =
+      data?.products && Array.isArray(data.products)
+        ? (data.products as unknown as Product[])
+        : [];
+    setProducts(fresh);
+
+    const stockFor = (productId: string, size: string): number => {
+      const product = fresh.find((p) => String(p.id) === productId);
+      const variant = product?.variants.find((v) => v.volume === size);
+      return variant ? variant.stock : 0;
+    };
+
+    setCartItems((prev) => {
+      const next: CartItems = {};
+      for (const productId in prev) {
+        for (const size in prev[productId]) {
+          const clamped = Math.min(prev[productId][size], stockFor(productId, size));
+          if (clamped > 0) {
+            if (!next[productId]) next[productId] = {};
+            next[productId][size] = clamped;
+          }
+          // Keep the persisted DB cart in step for signed-in users.
+          if (userId && clamped !== prev[productId][size]) {
+            updateCartInDB(Number(productId), size, clamped);
+          }
+        }
+      }
+      return next;
+    });
+  };
 
   const placeOrder = async (
     cartData: CartItems,
@@ -288,15 +335,21 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
     if (result.success) {
       setCartItems({});
       if (userId) {
-        await fetchUserOrders();
+        await refreshOrders();
       }
       localStorage.removeItem("rose_misk_cart");
 
       return { success: true, orderId: result.orderId };
     } else {
+      // G10 — auto-reduce the cart to available stock so the shopper can retry.
+      if (result.reason === "insufficient_stock") {
+        await reconcileCartWithStock();
+      }
       return {
         success: false,
         message: result.message || "Failed to create order",
+        reason: result.reason,
+        fieldErrors: result.fieldErrors,
       };
     }
   };
@@ -321,6 +374,7 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
     placeOrder,
     userOrders,
     setUserOrders,
+    refreshOrders,
     getPriceBySize,
   };
 

@@ -55,7 +55,7 @@ const ProductDetails: React.FC<{ product: ProductDetail }> = ({ product }) => {
 
   if (!context) return null;
 
-  const { addToCart } = context;
+  const { addToCart, cartItems } = context;
 
   const sizes = product.variants.map((v) => v.volume);
   const defaultPrice = product.variants?.[0]?.price ?? 0;
@@ -70,6 +70,17 @@ const ProductDetails: React.FC<{ product: ProductDetail }> = ({ product }) => {
   const handleAdd = () => {
     if (!selectedSize) {
       setError("Please select a size first");
+      return;
+    }
+    // G13 — give feedback instead of silently no-op'ing when the shopper has
+    // already reached the available stock for this variant.
+    const inCart = cartItems?.[product.id]?.[selectedSize] ?? 0;
+    if (selectedVariant && inCart + 1 > selectedVariant.stock) {
+      setError(
+        selectedVariant.stock > 0
+          ? `الحد المتاح ${selectedVariant.stock} قطعة فقط في المخزون`
+          : "هذا الحجم غير متوفر حالياً"
+      );
       return;
     }
     addToCart(product.id, selectedSize);

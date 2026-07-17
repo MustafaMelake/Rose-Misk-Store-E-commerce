@@ -10,8 +10,13 @@ export default async function AdminLayout({
   // Shares the same request-cached session as the page + action guards.
   const user = await getCurrentUser();
 
-  if (!user || user.role !== "ADMIN") {
-    redirect("/");
+  // Guests are sent to login with a return path; a signed-in non-admin gets a
+  // clear, localized "access denied" page instead of a silent bounce (G15).
+  if (!user) {
+    redirect("/login?callbackUrl=/admin");
+  }
+  if (user.role !== "ADMIN") {
+    redirect("/unauthorized");
   }
 
   return (

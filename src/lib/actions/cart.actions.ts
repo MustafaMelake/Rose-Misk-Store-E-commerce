@@ -62,19 +62,6 @@ export async function updateCartInDB(
   }
 }
 
-export async function clearUserCart() {
-  try {
-    const user = await requireUser();
-    await prisma.cartItem.deleteMany({
-      where: { userId: user.id },
-    });
-    return { success: true };
-  } catch (error) {
-    console.error("clearUserCart error:", error);
-    return { success: false };
-  }
-}
-
 export async function mergeCartAction(localCart: CartItems) {
   try {
     const user = await requireUser();

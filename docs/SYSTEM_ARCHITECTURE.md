@@ -96,7 +96,8 @@ The live DB had been shaped by `db push`, so the recorded migration history had 
 
 | Control | Setting | Why |
 |---|---|---|
-| Email verification | `requireEmailVerification: true`, `sendOnSignUp: true` | Closes the "register a password account on a victim's email" takeover vector |
+| Email verification | `requireEmailVerification: isEmailConfigured`, `sendOnSignUp: isEmailConfigured` | Closes the "register on a victim's email" takeover vector — **gated on a mailer existing** so it degrades gracefully instead of locking users out (see below) |
+| Password reset | `emailAndPassword.sendResetPassword` | Mails a tokenized `/reset-password` link (Arabic RTL); no-ops with a warning if no mailer (G5) |
 | Password policy | `minPasswordLength: 8`, `maxPasswordLength: 128` | Baseline credential hygiene |
 | Role field | `additionalFields.role.type: ["ADMIN","USER"]`, **`input: false`** | Literal-array → strict `"ADMIN" \| "USER"` union; `input:false` blocks self-elevation at sign-up |
 | Account linking | `trustedProviders: ["google","facebook"]` only | Auto-links only where the provider verifies the email |
@@ -105,6 +106,8 @@ The live DB had been shaped by `db push`, so the recorded migration history had 
 | `nextCookies()` | **last** plugin | Correct `Set-Cookie` handling for auth flows via Server Actions |
 
 Role typing was verified end-to-end (`session.user.role` is the strict union, not `any`) using `$Infer`/`inferAdditionalFields`, so guards can trust the role.
+
+**Email graceful degradation (G7).** The Resend client and `isEmailConfigured`/`EMAIL_FROM`/`CONTACT_TO` live in one shared module, [src/lib/email.ts](../src/lib/email.ts), imported by both `auth.ts` and the contact action so "is email configured?" is decided in exactly one place. `isEmailConfigured = Boolean(resend)` is true only when `RESEND_API_KEY` is set. Verification is mandatory **only** when a mailer exists; otherwise `requireEmailVerification`/`sendOnSignUp` are `false`, so a new account is immediately usable rather than permanently un-signable-in. A startup `console.warn` flags the degraded mode, and the client screens read the optional `NEXT_PUBLIC_EMAIL_ENABLED` flag to show an honest "email inactive in this environment" note. The full user-facing flow (verify-email landing, resend, unverified-login recovery, forgot/reset) is documented in `USER_JOURNEYS.md §1.4`.
 
 ### 3.2 The `proxy.ts` session-cookie routing ([src/proxy.ts](../src/proxy.ts))
 
@@ -115,11 +118,15 @@ const sessionCookie = getSessionCookie(request);
 const isProtectedPage = path.startsWith("/admin")
   || path.startsWith("/orders") || path.startsWith("/placeorder");
 
-if (!sessionCookie && isProtectedPage) return NextResponse.redirect(new URL("/login", request.url));
-if (sessionCookie && isAuthPage)      return NextResponse.redirect(new URL("/", request.url));
+if (!sessionCookie && isProtectedPage) {
+  const loginUrl = new URL("/login", request.url);
+  loginUrl.searchParams.set("callbackUrl", path + request.nextUrl.search); // G14
+  return NextResponse.redirect(loginUrl);
+}
+if (sessionCookie && isAuthPage) return NextResponse.redirect(new URL("/", request.url));
 ```
 
-Matcher: `/login`, `/signup`, `/admin/:path*`, `/orders/:path*`, `/placeorder/:path*`. It handles the `__Secure-` cookie prefix automatically. Crucially, the middleware is a **UX redirect, not an authorization boundary** — a forged cookie passes the middleware but fails the real DB-backed guard downstream.
+Matcher: `/login`, `/signup`, `/admin/:path*`, `/orders/:path*`, `/placeorder/:path*`. It handles the `__Secure-` cookie prefix automatically. Crucially, the middleware is a **UX redirect, not an authorization boundary** — a forged cookie passes the middleware but fails the real DB-backed guard downstream. The protected-route redirect preserves the intended path as `callbackUrl` (G14); `/login` sanitizes it (internal absolute paths only — protocol-relative and backslash forms are rejected to block open redirects) before returning the user there.
 
 ### 3.3 The guard layer ([src/lib/auth-guards.ts](../src/lib/auth-guards.ts))
 
@@ -139,7 +146,7 @@ export async function requireAdmin() { const u = await requireUser(); if (u.role
 
 | Surface | Guard | Notes |
 |---|---|---|
-| `admin/layout.tsx` | `getCurrentUser` + `role === "ADMIN"` → `redirect("/")` | Defense in depth (layout level) |
+| `admin/layout.tsx` | `getCurrentUser` → guest `redirect("/login?callbackUrl=/admin")`, non-admin `redirect("/unauthorized")` | Defense in depth (layout level); localized access-denied landing instead of a silent bounce (G15) |
 | `admin/page.tsx` (dashboard) | `requireAdmin()` **before any fetch** | Data via guarded `getDashboardStats` |
 | `admin/users/page.tsx` | `requireAdmin()` **before any fetch** | Data via guarded `getAdminUsers` |
 | Other admin pages | Route data through `requireAdmin()`-guarded actions | `getAdminProducts`, `getAllOrders`, `getPendingReviews`, `getInventoryProducts`, `getTopSelling/RatedProducts` |
@@ -176,7 +183,6 @@ export async function requireAdmin() { const u = await requireUser(); if (u.role
 |---|---|---|---|
 | `cart.actions.ts` | `getUserCart` | `requireUser` | read |
 | | `updateCartInDB` | `requireUser` + `cartUpdateSchema` | ✅ |
-| | `clearUserCart` | `requireUser` | ✅ |
 | | `mergeCartAction` | `requireUser` + `cartMergeSchema` + txn | ✅ |
 | `order.actions.ts` | `createOrder` | **`requireUser`** + order/items schemas | ✅ |
 | | `getUserOrders` | `requireUser` | read |
@@ -192,13 +198,14 @@ export async function requireAdmin() { const u = await requireUser(); if (u.role
 | `dashboard.actions.ts` | `getDashboardStats` | `requireAdmin` | read |
 | `user.actions.ts` | `getAdminUsers` | `requireAdmin` | read |
 | `category.actions.ts` | `getCategories` | Public (error masked) | read |
+| `contact.actions.ts` | `sendContactMessage` | Public | `contactInputSchema` + Resend delivery |
 
 ### 4.3 The order-creation pipeline (the app's most safety-critical path)
 
 `createOrder` ([src/lib/actions/order.actions.ts](../src/lib/actions/order.actions.ts)) is authenticated-only and treats **all** client input as untrusted:
 
 1. **`requireUser()`** — guests are rejected here (aligned with the `/placeorder` middleware redirect). Identity is the session's, never the payload's.
-2. **Validate** `orderInputSchema` + `orderItemsInputSchema`; invalid → Arabic message, no DB work.
+2. **Validate** `orderInputSchema` + `orderItemsInputSchema`; invalid → returns `fieldErrors` (Arabic, per order-input field) so the checkout form can render errors under the offending inputs (G11), no DB work.
 3. **Normalize duplicates** — duplicate `(id, size)` lines are merged (quantities summed) via a `Map`, so a variant isn't stock-checked or created twice.
 4. **Reject `CARD`** — no gateway is wired; an un-payable order is never created.
 5. **Transaction:** for each line, look up the variant, then perform an **atomic conditional decrement**:
@@ -207,12 +214,14 @@ export async function requireAdmin() { const u = await requireUser(); if (u.role
      where: { id: variant.id, stock: { gte: item.quantity } },
      data: { stock: { decrement: item.quantity } },
    });
-   if (updated.count === 0) throw new PublicError("…غير متوفر بالكمية المطلوبة.");
+   if (updated.count === 0) throw new InsufficientStockError("…غير متوفر بالكمية المطلوبة.");
    ```
-   The stock check and the write are a **single statement**, so two shoppers cannot both buy the last unit; a failed guard rolls back the whole transaction.
+   The stock check and the write are a **single statement**, so two shoppers cannot both buy the last unit; a failed guard rolls back the whole transaction. The dedicated `InsufficientStockError` (a `PublicError` subclass) makes the catch return `reason: "insufficient_stock"`, which the client uses to auto-reconcile the cart (G10).
 6. **Server-side pricing** — the total is rebuilt from `Prisma.Decimal` variant prices + `calculateShippingFee(governorate)`. The client-supplied total is discarded.
 7. **Persist** the order (`PENDING`) with the exact `variantId` per line, then delete **only the ordered** cart lines.
 8. `revalidatePath("/orders")`.
+
+**Structured result (`CreateOrderResult`).** `createOrder` returns `{ success, orderId?, message?, reason?, fieldErrors? }`. `fieldErrors` drives per-input checkout errors (G11); `reason: "insufficient_stock"` drives client cart reconciliation (G10). The success shape stays exactly `{ success: true, orderId }`.
 
 ---
 
@@ -239,15 +248,17 @@ export const REVENUE_STATUSES: OrderStatus[] = ["PAID", "SHIPPED", "DELIVERED"];
 
 ### 5.4 Order status machine & idempotent cancel-restock
 
-`updateOrderStatus` (`requireAdmin`) enforces a transition table with **terminal `DELIVERED` and `CANCELLED`**:
+`updateOrderStatus` (`requireAdmin`) enforces a transition table with **terminal `DELIVERED` and `CANCELLED`**. Under the **COD-only lifecycle** (G2/G3) new orders never enter `AWAITING_PAYMENT`/`PAID` — those remain only as *source* keys so any historical order in them can still be moved forward or cancelled:
 
 ```
-PENDING          → AWAITING_PAYMENT | PAID | SHIPPED | DELIVERED | CANCELLED
-AWAITING_PAYMENT → PAID | PENDING | SHIPPED | CANCELLED
-PAID             → SHIPPED | DELIVERED | CANCELLED
+PENDING          → SHIPPED | DELIVERED | CANCELLED
 SHIPPED          → DELIVERED | CANCELLED
 DELIVERED        → ∅        CANCELLED → ∅
+AWAITING_PAYMENT → SHIPPED | DELIVERED | CANCELLED   (legacy source only)
+PAID             → SHIPPED | DELIVERED | CANCELLED   (legacy source only)
 ```
+
+The admin order dropdown and status filter offer only `PENDING / SHIPPED / DELIVERED / CANCELLED`; a legacy order still in a removed state renders a matching read-only option so its `<select>` shows the real value.
 
 Cancellation is **idempotent and race-safe**:
 
@@ -287,6 +298,11 @@ Two concurrent cancellations can't both restock (the conditional flip yields `co
 ## 7. Known Gaps & Future Tech Debt
 
 The commerce engine (auth, validation, pricing, stock, orders, revenue, reviews) is cohesive and gap-free as of this cycle. The following are **non-blocking** structural/quality items deferred to the next cycle, carried forward from the Phase 4 checklist in [REFACTOR_PLAN.md](./REFACTOR_PLAN.md). None represents a security hole or a data-integrity risk in current usage.
+
+> **Phase 6 — UI/UX Realignment (Cross-Document Audit follow-up).** All 15 audit gaps (G1–G15) closed across three batches. ✅
+> **Batch 1 — DONE:** G5 (forgot/reset password), G7 (email-verification journey + graceful degradation), G14 (login return-path), G15 (localized `/unauthorized`).
+> **Batch 2 — DONE:** G1 (live order-status refresh on `/orders`), G2/G3 (removed unreachable `AWAITING_PAYMENT`/`PAID` from admin controls + state machine), G6 (COD-only payment UI), G12 (`/order-confirmation/[id]` receipt page).
+> **Batch 3 — DONE:** G4 (contact form → real Resend-backed `sendContactMessage`), G10 (checkout-time cart reconciliation), G11 (field-level Arabic checkout errors), G13 (stock-ceiling feedback on product + cart pages), G8 (deleted `clearUserCart`), G9 (dead guest branch removed — completed in Batch 2).
 
 ### 7.1 DTO / serialization honesty (Medium)
 - `serializeProduct<T>()` returns `... as T` — the static type still claims `Decimal` while the runtime value is `number`. `ShopContext` compensates with `as unknown as Product[]`.
@@ -336,3 +352,6 @@ The commerce engine (auth, validation, pricing, stock, orders, revenue, reviews)
 | Schema & migrations | [prisma/schema.prisma](../prisma/schema.prisma), [prisma/migrations/](../prisma/migrations/) |
 | Server actions | [src/lib/actions/](../src/lib/actions/) |
 | Client store | [src/context/ShopContext.tsx](../src/context/ShopContext.tsx) |
+| Auth-edge routes (Phase 6 · Batch 1) | [verify-email](../src/app/(shop)/verify-email/page.tsx), [forgot-password](../src/app/(shop)/forgot-password/page.tsx), [reset-password](../src/app/(shop)/reset-password/page.tsx), [unauthorized](../src/app/(shop)/unauthorized/page.tsx) |
+| Commerce-UX (Phase 6 · Batch 2) | [order-confirmation](../src/app/(shop)/order-confirmation/[id]/page.tsx), [revenue rule](../src/lib/revenue.ts), `refreshOrders` in [ShopContext](../src/context/ShopContext.tsx) |
+| Forms & resilience (Phase 6 · Batch 3) | [email.ts](../src/lib/email.ts), [contact.actions.ts](../src/lib/actions/contact.actions.ts), `reconcileCartWithStock` in [ShopContext](../src/context/ShopContext.tsx), `CreateOrderResult` in [order.actions.ts](../src/lib/actions/order.actions.ts) |

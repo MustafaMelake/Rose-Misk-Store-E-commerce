@@ -3,7 +3,6 @@
 import React, { useContext, useMemo, useState } from "react";
 import { ShopContext } from "../../../context/ShopContext";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
 import {
   ALL_GOVERNORATES,
   calculateShippingFee,
@@ -34,14 +33,20 @@ interface DeliveryData {
 const PlaceOrder: React.FC = () => {
   const context = useContext(ShopContext);
   const router = useRouter();
-  const { data: session } = authClient.useSession();
 
   if (!context) return null;
 
   const { cartItems, products, placeOrder, getPriceBySize } = context;
 
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<string>("COD");
+  // COD is the only payment method (G6); no gateway is wired, so there is no
+  // choice to make and nothing to reject later.
+  const paymentMethod = "COD";
+
+  // Checkout error surfaces (G11): a form-level banner and per-field messages
+  // keyed by the server's order-input field names.
+  const [formError, setFormError] = useState<string>("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   /** ---------------- DELIVERY FORM STATE ---------------- **/
   const [formData, setFormData] = useState<DeliveryData>({
@@ -99,9 +104,11 @@ const PlaceOrder: React.FC = () => {
   /** ---------------- SUBMIT HANDLER ---------------- **/
   const onSubmitHandler = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError("");
+    setFieldErrors({});
 
     if (cartData.length === 0) {
-      alert("سلتك فارغة، أضف بعض العطور أولاً!");
+      setFormError("سلتك فارغة، أضف بعض العطور أولاً!");
       return;
     }
 
@@ -114,30 +121,54 @@ const PlaceOrder: React.FC = () => {
         total
       );
 
-      if (result && result.success) {
-        alert("تم تسجيل طلبك بنجاح!");
+      if (result && result.success && result.orderId) {
+        // G12: land on a real confirmation/receipt page instead of a transient
+        // alert. placeOrder has already refreshed ShopContext.userOrders, so the
+        // confirmation page can show the order's details.
+        router.push(`/order-confirmation/${result.orderId}`);
+        return;
+      }
 
-        if (session?.user) {
-          router.push("/orders");
-        } else {
-          router.push("/");
-        }
+      // G11: show per-field Arabic errors under the inputs.
+      setFieldErrors(result?.fieldErrors ?? {});
+      if (result?.reason === "insufficient_stock") {
+        // G10: the cart was auto-reduced to available stock — tell the shopper.
+        setFormError(
+          "بعض المنتجات لم تعد متوفرة بالكمية المطلوبة، وتم تحديث سلتك. برجاء مراجعة الكميات ثم إعادة المحاولة."
+        );
       } else {
-        alert(result?.message || "حدث خطأ أثناء تنفيذ الطلب، حاول مرة أخرى.");
+        setFormError(
+          result?.message || "حدث خطأ أثناء تنفيذ الطلب، حاول مرة أخرى."
+        );
       }
     } catch (error) {
       console.error("Order Submission Error:", error);
-      alert("حدث خطأ أثناء تنفيذ الطلب، حاول مرة أخرى.");
+      setFormError("حدث خطأ أثناء تنفيذ الطلب، حاول مرة أخرى.");
     } finally {
       setLoading(false);
     }
   };
+
+  // Small helper for a per-field error line under an input.
+  const FieldError = ({ name }: { name: string }) =>
+    fieldErrors[name] ? (
+      <p dir="rtl" className="text-xs text-red-500 mt-1 pr-1">
+        {fieldErrors[name]}
+      </p>
+    ) : null;
   return (
     <div className="py-10 px-4 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-black dark:text-white animate-fadeIn">
       {/* ---------------- LEFT SIDE: DELIVERY FORM ---------------- */}
       <div className="md:col-span-2">
         <form id="order-form" onSubmit={onSubmitHandler} className="space-y-8">
-          {/* نفس كود الفورم بتاعك بدون أي تغيير */}
+          {formError && (
+            <p
+              dir="rtl"
+              className="bg-red-50 dark:bg-red-900/20 text-red-500 p-3 rounded-xl text-sm text-center border border-red-100 dark:border-red-900/30"
+            >
+              {formError}
+            </p>
+          )}
           <div>
             <h2 className="text-2xl font-semibold mb-6 tracking-wide flex items-center gap-2">
               DELIVERY{" "}
@@ -164,6 +195,7 @@ const PlaceOrder: React.FC = () => {
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 outline-none focus:border-gold-base transition-all"
                 />
               </div>
+              <FieldError name="customerName" />
               <input
                 required
                 name="email"
@@ -173,6 +205,7 @@ const PlaceOrder: React.FC = () => {
                 placeholder="Email address"
                 className="w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 outline-none focus:border-gold-base transition-all"
               />
+              <FieldError name="customerEmail" />
               <input
                 required
                 name="street"
@@ -182,6 +215,7 @@ const PlaceOrder: React.FC = () => {
                 placeholder="Street / Apartment"
                 className="w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 outline-none focus:border-gold-base transition-all"
               />
+              <FieldError name="address" />
               <div className="grid grid-cols-2 gap-4">
                 <input
                   required
@@ -209,6 +243,7 @@ const PlaceOrder: React.FC = () => {
                   ))}
                 </select>
               </div>
+              <FieldError name="governorate" />
               <div className="grid grid-cols-2 gap-4">
                 <input
                   name="zipcode"
@@ -237,6 +272,7 @@ const PlaceOrder: React.FC = () => {
                 placeholder="Phone (e.g. 01xxxxxxxxx)"
                 className="w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 outline-none focus:border-gold-base transition-all"
               />
+              <FieldError name="customerPhone" />
             </div>
           </div>
         </form>
@@ -275,27 +311,19 @@ const PlaceOrder: React.FC = () => {
           </h3>
 
           <div className="flex flex-col gap-3">
-            <label
-              className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
-                paymentMethod === "COD"
-                  ? "border-gold-base bg-gold-base/5"
-                  : "border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800"
-              }`}
-            >
+            {/* COD-only: a fixed method, not a choice (G6). */}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-gold-base bg-gold-base/5">
               <div className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === "COD"}
-                  onChange={() => setPaymentMethod("COD")}
-                  className="accent-gold-base w-4 h-4"
-                />
+                <span className="w-4 h-4 rounded-full border-2 border-gold-base flex items-center justify-center shrink-0">
+                  <span className="w-2 h-2 bg-gold-base rounded-full"></span>
+                </span>
                 <span className="font-medium text-sm">Cash On Delivery</span>
               </div>
-              {paymentMethod === "COD" && (
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              )}
-            </label>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+            <p className="text-[11px] text-gray-400 pr-1">
+              الدفع عند الاستلام هو وسيلة الدفع المتاحة حالياً.
+            </p>
           </div>
 
           <button

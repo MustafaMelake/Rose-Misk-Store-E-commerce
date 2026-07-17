@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   getUserCart,
   updateCartInDB,
-  clearUserCart,
   mergeCartAction,
 } from "./cart.actions";
 import { prisma } from "@/lib/prisma";
@@ -133,29 +132,6 @@ describe("Cart Server Actions", () => {
       );
 
       const result = await updateCartInDB(10, "50ml", 3);
-
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe("clearUserCart", () => {
-    it("should clear all user cart items", async () => {
-      (prisma.cartItem.deleteMany as any).mockResolvedValue({ count: 5 });
-
-      const result = await clearUserCart();
-
-      expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({
-        where: { userId: mockUserId },
-      });
-      expect(result.success).toBe(true);
-    });
-
-    it("should return false if deletion fails", async () => {
-      (prisma.cartItem.deleteMany as any).mockRejectedValue(
-        new Error("Failed")
-      );
-
-      const result = await clearUserCart();
 
       expect(result.success).toBe(false);
     });

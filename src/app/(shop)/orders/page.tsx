@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import Image from "next/image";
 import { ShopContext } from "../../../context/ShopContext";
 import Title from "../../../components/Title";
@@ -38,6 +38,30 @@ interface Order {
 
 const Orders: React.FC = () => {
   const context = useContext(ShopContext);
+  const refreshOrders = context?.refreshOrders;
+
+  // G1 — keep statuses fresh so admin-driven changes (shipped / delivered /
+  // cancelled) surface without a manual reload: refresh on mount, whenever the
+  // tab regains focus, and on a light 30s interval while this page is open.
+  // Declared before the early return so the hook order stays unconditional.
+  useEffect(() => {
+    if (!refreshOrders) return;
+    refreshOrders();
+
+    const onFocus = () => refreshOrders();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshOrders();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    const interval = setInterval(refreshOrders, 30_000);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+      clearInterval(interval);
+    };
+  }, [refreshOrders]);
 
   if (!context) return null;
 

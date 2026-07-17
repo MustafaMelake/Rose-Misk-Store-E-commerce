@@ -16,9 +16,13 @@ export default async function proxy(request: NextRequest) {
     path.startsWith("/orders") ||
     path.startsWith("/placeorder");
 
-  // Signed-out visitor hitting a protected route → send to login.
+  // Signed-out visitor hitting a protected route → send to login, preserving
+  // where they were headed so login can return them there after signing in
+  // (G14). The path + original query string round-trips through `callbackUrl`.
   if (!sessionCookie && isProtectedPage) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", path + request.nextUrl.search);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Already signed in but visiting login/signup → send home.

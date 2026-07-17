@@ -1,11 +1,31 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FaFacebook } from "react-icons/fa";
 import { authClient } from "@/lib/auth-client";
 import Footer from "@/components/Footer";
+
+/**
+ * Only allow internal, absolute-path redirect targets. Blocks protocol-relative
+ * (`//evil.com`) and backslash tricks so `callbackUrl` can't drive an open
+ * redirect off-site.
+ */
+function sanitizeCallbackUrl(raw: string | null | undefined): string {
+  if (!raw) return "/";
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) {
+    return "/";
+  }
+  return raw;
+}
+
+function readCallbackUrl(): string {
+  if (typeof window === "undefined") return "/";
+  return sanitizeCallbackUrl(
+    new URLSearchParams(window.location.search).get("callbackUrl")
+  );
+}
 
 // أيقونة جوجل الأصلية
 const GoogleIcon = () => (
@@ -37,13 +57,22 @@ const GoogleIcon = () => (
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    // Confirmation banner after a completed password reset (G5).
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reset") === "success") setResetSuccess(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setNeedsVerification(false);
 
     const { error: signInError } = await authClient.signIn.email({
       email: form.email,
@@ -51,10 +80,23 @@ const Login = () => {
     });
 
     if (signInError) {
-      setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+      // Distinguish "email not verified" (recoverable via resend) from bad
+      // credentials, instead of showing one misleading message for both (G7).
+      if (
+        signInError.code === "EMAIL_NOT_VERIFIED" ||
+        signInError.status === 403
+      ) {
+        setError(
+          "لم يتم تأكيد بريدك الإلكتروني بعد. تحقق من صندوق الوارد أو أعد إرسال رابط التأكيد."
+        );
+        setNeedsVerification(true);
+      } else {
+        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+      }
       setLoading(false);
     } else {
-      router.push("/");
+      // Return the user to wherever they were headed before the login wall.
+      router.push(readCallbackUrl());
       router.refresh();
     }
   };
@@ -62,7 +104,7 @@ const Login = () => {
   const handleSocialLogin = async (provider: "google" | "facebook") => {
     await authClient.signIn.social({
       provider: provider,
-      callbackURL: "/",
+      callbackURL: readCallbackUrl(),
     });
   };
 
@@ -83,10 +125,24 @@ const Login = () => {
             Enter details to access your account
           </p>
 
-          {error && (
-            <p className="bg-red-50 dark:bg-red-900/20 text-red-500 p-3 rounded-lg text-sm text-center mb-4 border border-red-100 dark:border-red-900/30">
-              {error}
+          {resetSuccess && !error && (
+            <p className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 p-3 rounded-lg text-sm text-center mb-4 border border-emerald-100 dark:border-emerald-900/30">
+              تم تحديث كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن.
             </p>
+          )}
+
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-500 p-3 rounded-lg text-sm text-center mb-4 border border-red-100 dark:border-red-900/30">
+              <p>{error}</p>
+              {needsVerification && (
+                <Link
+                  href={`/verify-email?email=${encodeURIComponent(form.email)}`}
+                  className="inline-block mt-2 font-semibold text-gold-base hover:underline"
+                >
+                  تأكيد البريد الإلكتروني
+                </Link>
+              )}
+            </div>
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">

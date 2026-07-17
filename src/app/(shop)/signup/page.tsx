@@ -28,7 +28,11 @@ const SignUp = () => {
       setError(signUpError.message || "Failed to create account");
       setLoading(false);
     } else {
-      router.push("/");
+      // Route to the verification landing instead of silently dumping the user
+      // on the home page. When verification is required they'll see a
+      // "check your inbox" screen; when it isn't (no mailer configured) they
+      // already have a session and the page shows an "account ready" state (G7).
+      router.push(`/verify-email?email=${encodeURIComponent(form.email)}`);
     }
   };
 

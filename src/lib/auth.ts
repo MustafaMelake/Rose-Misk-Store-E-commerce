@@ -3,11 +3,19 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { prisma } from "@/lib/prisma";
-import { Resend } from "resend";
+import { resend, isEmailConfigured, EMAIL_FROM } from "@/lib/email";
 
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+// Email delivery (verification + password reset) only works when Resend is
+// configured. When it is NOT, we degrade gracefully instead of silently
+// locking users out: mandatory email verification is switched off so a new
+// account stays usable. (Previously `requireEmailVerification: true` with no
+// mailer meant a freshly-registered user could never sign in.) Set
+// RESEND_API_KEY (and EMAIL_FROM) to turn the full verification flow back on.
+if (!isEmailConfigured) {
+  console.warn(
+    "[auth] RESEND_API_KEY not set — email verification is DISABLED (accounts are usable immediately) and password-reset emails will not be sent. Configure RESEND_API_KEY + EMAIL_FROM to enable them."
+  );
+}
 
 // Origins allowed to make authenticated requests (CSRF protection).
 // Always trust local dev; add the app's configured base URL and any extra
@@ -46,15 +54,46 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    // Users cannot sign in until they confirm ownership of their email.
-    // This closes the "register a password account on a victim's email"
-    // account-linking takeover vector.
-    requireEmailVerification: true,
+    // Users cannot sign in until they confirm ownership of their email —
+    // this closes the "register a password account on a victim's email"
+    // account-linking takeover vector. Enforced ONLY when a mailer exists
+    // (see `isEmailConfigured`); otherwise it would lock everyone out.
+    requireEmailVerification: isEmailConfigured,
     minPasswordLength: 8,
     maxPasswordLength: 128,
+    // G5 — password reset. The client calls
+    // `authClient.forgetPassword({ email, redirectTo: "/reset-password" })`;
+    // Better Auth then invokes this with a tokenized URL that points at that
+    // page (`/reset-password?token=…`).
+    sendResetPassword: async ({ user, url }) => {
+      if (!resend) {
+        console.warn(
+          `[auth] RESEND_API_KEY not set — skipping password-reset email for ${user.email}`
+        );
+        return;
+      }
+      await resend.emails.send({
+        from: EMAIL_FROM,
+        to: user.email,
+        subject: "إعادة تعيين كلمة المرور — Rose Misk",
+        html: `
+          <div style="font-family: sans-serif; line-height: 1.8; direction: rtl; text-align: right;">
+            <h2>إعادة تعيين كلمة المرور</h2>
+            <p>لقد تلقّينا طلباً لإعادة تعيين كلمة مرور حسابك في روز مسك.</p>
+            <p>
+              <a href="${url}"
+                 style="display:inline-block;padding:12px 24px;background:#000;color:#fff;text-decoration:none;border-radius:8px;">
+                إعادة تعيين كلمة المرور
+              </a>
+            </p>
+            <p style="color:#666;font-size:12px;">إذا لم تطلب ذلك، يمكنك تجاهل هذه الرسالة بأمان.</p>
+          </div>
+        `,
+      });
+    },
   },
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: isEmailConfigured,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
       // Requires RESEND_API_KEY (and EMAIL_FROM) to be configured.
@@ -68,7 +107,7 @@ export const auth = betterAuth({
       }
 
       await resend.emails.send({
-        from: process.env.EMAIL_FROM ?? "Rose Misk <onboarding@resend.dev>",
+        from: EMAIL_FROM,
         to: user.email,
         subject: "Verify your email — Rose Misk",
         html: `

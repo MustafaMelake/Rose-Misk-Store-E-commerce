@@ -24,6 +24,24 @@ const Cart: React.FC = () => {
 
   const { products, cartItems, getPriceBySize, updateQuantity } = context;
   const [cartData, setCartData] = useState<CartDisplayItem[]>([]);
+  // G13 — surfaced when a "+" would exceed the variant's available stock.
+  const [stockNotice, setStockNotice] = useState<string>("");
+
+  const getVariantStock = (productId: number, size: string): number => {
+    const product = products.find((p) => p.id === productId);
+    const variant = product?.variants.find((v) => v.volume === size);
+    return variant ? variant.stock : 0;
+  };
+
+  const handleIncrement = (item: CartDisplayItem) => {
+    const stock = getVariantStock(item.id, item.size);
+    if (item.quantity + 1 > stock) {
+      setStockNotice(`الحد المتاح ${stock} قطعة فقط من "${item.name}".`);
+      return;
+    }
+    setStockNotice("");
+    updateQuantity(item.id, item.size, item.quantity + 1);
+  };
 
   useEffect(() => {
     const tempData: CartDisplayItem[] = [];
@@ -88,6 +106,15 @@ const Cart: React.FC = () => {
           <Title text1="YOUR" text2="COLLECTION" />
         </div>
 
+        {stockNotice && (
+          <p
+            dir="rtl"
+            className="mb-8 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 p-3 rounded-xl text-sm text-center border border-amber-100 dark:border-amber-900/30"
+          >
+            {stockNotice}
+          </p>
+        )}
+
         <div className="flex flex-col lg:flex-row gap-16">
           {/* Product List */}
           <div className="flex-1 space-y-8">
@@ -141,9 +168,7 @@ const Cart: React.FC = () => {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() =>
-                          updateQuantity(item.id, item.size, item.quantity + 1)
-                        }
+                        onClick={() => handleIncrement(item)}
                         className="p-1 hover:text-gold-base transition-colors"
                       >
                         <Plus size={14} />

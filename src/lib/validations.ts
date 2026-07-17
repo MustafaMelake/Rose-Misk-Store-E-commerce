@@ -184,3 +184,16 @@ export const productUpdateSchema = z.object({
 export type VariantInput = z.infer<typeof variantInputSchema>;
 export type ProductCreateInput = z.infer<typeof productCreateSchema>;
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
+
+// ---------------------------------------------------------------------------
+// Contact form
+// ---------------------------------------------------------------------------
+
+/** Public contact-form submission (name, reply-to email, message body). */
+export const contactInputSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email(),
+  message: z.string().trim().min(5).max(2000),
+});
+
+export type ContactInput = z.infer<typeof contactInputSchema>;
