@@ -59,12 +59,12 @@ class InsufficientStockError extends PublicError {}
 /** Arabic, per-field messages for checkout validation failures (G11), keyed by
  *  the order-input field name that Zod reports. */
 const ORDER_FIELD_MESSAGES: Record<string, string> = {
-  customerName: "برجاء إدخال الاسم كاملاً.",
-  customerEmail: "برجاء إدخال بريد إلكتروني صحيح.",
-  customerPhone: "برجاء إدخال رقم هاتف صحيح.",
-  governorate: "برجاء اختيار المحافظة.",
-  address: "برجاء إدخال عنوان التوصيل.",
-  paymentMethod: "طريقة الدفع غير صالحة.",
+  customerName: "Please enter your full name.",
+  customerEmail: "Please enter a valid email address.",
+  customerPhone: "Please enter a valid phone number.",
+  governorate: "Please select a governorate.",
+  address: "Please enter a delivery address.",
+  paymentMethod: "Invalid payment method.",
 };
 
 export interface CreateOrderResult {
@@ -106,7 +106,7 @@ export async function createOrder(
       }
       return {
         success: false,
-        message: "بيانات الطلب غير صالحة. برجاء مراجعة الحقول المطلوبة.",
+        message: "Invalid order details. Please review the highlighted fields.",
         fieldErrors,
       };
     }
@@ -131,7 +131,8 @@ export async function createOrder(
     if (orderInput.paymentMethod === "CARD") {
       return {
         success: false,
-        message: "الدفع بالبطاقة غير متاح حالياً. برجاء اختيار الدفع عند الاستلام.",
+        message:
+          "Card payments are not available yet. Please choose Cash on Delivery.",
       };
     }
 
@@ -147,7 +148,7 @@ export async function createOrder(
 
         if (!variant) {
           throw new InsufficientStockError(
-            `المنتج ذو الحجم ${item.size} غير متوفر بالكمية المطلوبة.`
+            `Product size ${item.size} is not available in the requested quantity.`
           );
         }
 
@@ -161,7 +162,7 @@ export async function createOrder(
 
         if (updated.count === 0) {
           throw new InsufficientStockError(
-            `المنتج ذو الحجم ${item.size} غير متوفر بالكمية المطلوبة.`
+            `Product size ${item.size} is not available in the requested quantity.`
           );
         }
 
@@ -232,7 +233,7 @@ export async function createOrder(
       success: false,
       message: toPublicMessage(
         error,
-        "تعذّر إتمام طلبك. برجاء المحاولة مرة أخرى."
+        "Failed to place your order. Please try again."
       ),
     };
   }
@@ -280,7 +281,7 @@ export async function getUserOrders() {
     console.error("getUserOrders error:", error);
     return {
       success: false,
-      message: toPublicMessage(error, "تعذّر تحميل طلباتك."),
+      message: toPublicMessage(error, "Could not load your orders."),
     };
   }
 }
@@ -318,7 +319,7 @@ export async function getAllOrders() {
     console.error("getAllOrders error:", error);
     return {
       success: false,
-      message: toPublicMessage(error, "تعذّر تحميل الطلبات."),
+      message: toPublicMessage(error, "Failed to fetch orders."),
     };
   }
 }
@@ -336,7 +337,7 @@ export async function updateOrderStatus(
     });
 
     if (!existingOrder) {
-      return { success: false, message: "الطلب غير موجود." };
+      return { success: false, message: "Order not found." };
     }
 
     // Enforce the state machine: terminal states can't move, and only the
@@ -345,7 +346,7 @@ export async function updateOrderStatus(
     if (!allowedNext.includes(newStatus)) {
       return {
         success: false,
-        message: `لا يمكن تغيير حالة الطلب من ${existingOrder.status} إلى ${newStatus}.`,
+        message: `Cannot change order status from ${existingOrder.status} to ${newStatus}.`,
       };
     }
 
@@ -397,7 +398,7 @@ export async function updateOrderStatus(
     console.error("updateOrderStatus error:", error);
     return {
       success: false,
-      message: toPublicMessage(error, "فشل تحديث حالة الطلب."),
+      message: toPublicMessage(error, "Update failed."),
     };
   }
 }

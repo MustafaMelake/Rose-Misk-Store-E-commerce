@@ -108,7 +108,7 @@ const PlaceOrder: React.FC = () => {
     setFieldErrors({});
 
     if (cartData.length === 0) {
-      setFormError("سلتك فارغة، أضف بعض العطور أولاً!");
+      setFormError("Your cart is empty. Add some fragrances first!");
       return;
     }
 
@@ -134,16 +134,16 @@ const PlaceOrder: React.FC = () => {
       if (result?.reason === "insufficient_stock") {
         // G10: the cart was auto-reduced to available stock — tell the shopper.
         setFormError(
-          "بعض المنتجات لم تعد متوفرة بالكمية المطلوبة، وتم تحديث سلتك. برجاء مراجعة الكميات ثم إعادة المحاولة."
+          "Some items are no longer available in the requested quantity, so your cart was updated. Please review the quantities and try again."
         );
       } else {
         setFormError(
-          result?.message || "حدث خطأ أثناء تنفيذ الطلب، حاول مرة أخرى."
+          result?.message || "Something went wrong while placing your order. Please try again."
         );
       }
     } catch (error) {
       console.error("Order Submission Error:", error);
-      setFormError("حدث خطأ أثناء تنفيذ الطلب، حاول مرة أخرى.");
+      setFormError("Something went wrong while placing your order. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ const PlaceOrder: React.FC = () => {
   // Small helper for a per-field error line under an input.
   const FieldError = ({ name }: { name: string }) =>
     fieldErrors[name] ? (
-      <p dir="rtl" className="text-xs text-red-500 mt-1 pr-1">
+      <p className="text-xs text-red-500 mt-1">
         {fieldErrors[name]}
       </p>
     ) : null;
@@ -163,7 +163,6 @@ const PlaceOrder: React.FC = () => {
         <form id="order-form" onSubmit={onSubmitHandler} className="space-y-8">
           {formError && (
             <p
-              dir="rtl"
               className="bg-red-50 dark:bg-red-900/20 text-red-500 p-3 rounded-xl text-sm text-center border border-red-100 dark:border-red-900/30"
             >
               {formError}
@@ -234,7 +233,7 @@ const PlaceOrder: React.FC = () => {
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 outline-none focus:border-gold-base transition-all appearance-none"
                 >
                   <option value="" disabled>
-                    اختر المحافظة / State
+                    Select governorate
                   </option>
                   {ALL_GOVERNORATES.map((gov) => (
                     <option key={gov} value={gov}>
@@ -294,7 +293,7 @@ const PlaceOrder: React.FC = () => {
               <span>Shipping Fee</span>
               <span>
                 {dynamicDeliveryFee === 0
-                  ? "اختر المحافظة"
+                  ? "Select governorate"
                   : formatCurrency(dynamicDeliveryFee)}
               </span>
             </div>
@@ -322,7 +321,7 @@ const PlaceOrder: React.FC = () => {
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             </div>
             <p className="text-[11px] text-gray-400 pr-1">
-              الدفع عند الاستلام هو وسيلة الدفع المتاحة حالياً.
+              Cash on Delivery is the only payment method available right now.
             </p>
           </div>
 

@@ -8,7 +8,7 @@ export default function DeleteProductButton({ id }: { id: number }) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+    if (!confirm("Are you sure you want to delete this product?")) return;
 
     setIsDeleting(true);
     const result = await deleteProduct(id);

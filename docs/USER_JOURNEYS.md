@@ -2,7 +2,7 @@
 
 > **Scope:** Every customer- and admin-facing touchpoint of the Rose Misk e-commerce app, mapped to the code that powers it.
 > **Stack (front-of-house):** Next.js 16.2.2 (App Router, React 19 Server + Client Components) · Better Auth 1.5.6 · client `ShopContext` · Tailwind CSS 4 · `react-toastify` · `framer-motion`.
-> **Audience:** Arabic-first (Egypt). All money renders as `ar-EG` EGP; all dates render as `ar-EG`; all user-facing error/status strings are Arabic.
+> **Audience:** Egypt. UI and messaging are **English**; money renders as `en-US` EGP (e.g. `EGP 1,234.50`); all dates render as `en-US` pinned to the `Africa/Cairo` timezone. Governorate names remain Arabic as they are DB/enum data, not display labels.
 > **Companion doc:** [SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md) covers the server, database, and security layers each journey below depends on.
 
 ---
@@ -46,7 +46,7 @@ The **middleware** ([src/proxy.ts](../src/proxy.ts)) performs an *optimistic* co
    - Valid product → renders `ProductDetails` (variant/volume selector, price via `formatCurrency`, stock-aware "Add to Cart") plus `ProductReviews` (approved reviews only).
    - The action includes **only `APPROVED`** reviews with the reviewer's name/image; pending and rejected reviews never reach the storefront.
 
-**Price display contract:** every storefront price — cards, detail page, cart, checkout, order history — flows through `formatCurrency` from [src/lib/format.ts](../src/lib/format.ts), producing `ar-EG` EGP output (e.g. `‏١٬٢٣٤٫٥٠ ج.م.‏`). There is a single formatter; no component concatenates a currency string of its own.
+**Price display contract:** every storefront price — cards, detail page, cart, checkout, order history — flows through `formatCurrency` from [src/lib/format.ts](../src/lib/format.ts), producing `en-US` EGP output (e.g. `EGP 1,234.50`). There is a single formatter; no component concatenates a currency string of its own.
 
 ---
 
@@ -113,7 +113,7 @@ The net effect: **no items are silently lost at login**, duplicates are summed r
 5. **Result:**
    - Success → `{ success: true, orderId }`. The context clears the cart, refreshes order history, and the shopper is redirected to **`/order-confirmation/[orderId]`** — a durable receipt page (order number, date, item count, total) with links to track orders or keep shopping (G12). This replaced the old transient `alert()`.
    - Failure → surfaced **inline** (no more `alert`): a form-level banner plus per-field messages under the offending inputs (G11), driven by the server's structured `{ message, fieldErrors, reason }`.
-     - **Validation failure** → `fieldErrors` (Arabic, keyed by `customerName` / `customerEmail` / `customerPhone` / `governorate` / `address`) render under the matching inputs.
+     - **Validation failure** → `fieldErrors` (English, keyed by `customerName` / `customerEmail` / `customerPhone` / `governorate` / `address`) render under the matching inputs.
      - **Insufficient stock** (`reason: "insufficient_stock"`) → the cart is **auto-reconciled** to available stock before the message shows, so the shopper isn't stuck (G10; see §1.2).
 
 **Guest-checkout cohesion note:** the earlier ambiguity (server allowed `null` users while the middleware blocked `/placeorder`) is resolved — `createOrder` now begins with `requireUser()`, so the authenticated-only intent is enforced identically at the UI redirect layer and the server action layer.
@@ -122,7 +122,7 @@ The net effect: **no items are silently lost at login**, duplicates are summed r
 
 ### 1.4 Account Lifecycle — sign-up, verification, password recovery & return paths
 
-This section covers the authentication edges (added in Phase 6, Batch 1). All screens are Arabic-first, RTL.
+This section covers the authentication edges (added in Phase 6, Batch 1). All screens are in English (LTR).
 
 #### Sign-up → email verification
 1. `/signup` calls `authClient.signUp.email(...)`. On success the user is routed to **`/verify-email?email=…`** (no longer dumped silently on the home page).
@@ -159,70 +159,72 @@ The `/contact` form is now backed by a real server action (G4) — it no longer 
 
 ## 2. UI & Localization (i18n)
 
-### 2.1 Currency — `formatCurrency` (`ar-EG` / EGP)
+### 2.1 Currency — `formatCurrency` (`en-US` / EGP)
 
 [src/lib/format.ts](../src/lib/format.ts) is the **single source of truth** for money across both the storefront and the admin dashboard:
 
 ```ts
 export function formatCurrency(value: number | string): string {
   const n = Number(value);
-  return new Intl.NumberFormat("ar-EG", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "EGP",
-  }).format(Number.isFinite(n) ? n : 0);
+  }).format(Number.isFinite(n) ? n : 0); // -> "EGP 1,234.50"
 }
 ```
 
-- **Non-finite guard:** `NaN`/`Infinity`/garbage input renders as `0` formatted, never `"NaN ج.م."`.
-- **Coverage:** product cards (`ProductItem`), product detail, cart line totals, `CheckOut` summary, `/placeorder` summary, `/orders` history, and the admin surfaces (dashboard KPI, orders table, stock table, top-sellers, customers table, revenue chart tooltip/axis). The old ad-hoc `formatPrice` (en-US) helper and the hardcoded `"EGP "` context string have been fully removed.
-- **Chart exception:** `RevenueChart` uses a local compact `ar-EG` formatter with `maximumFractionDigits: 0` for axis ticks (whole-EGP labels), and `formatCurrency` for the precise tooltip value.
+- **English formatting, Western numerals:** `en-US` guarantees the ISO `EGP` prefix and Western Arabic digits (e.g. `EGP 1,234.50`), not Eastern Arabic numerals.
+- **Non-finite guard:** `NaN`/`Infinity`/garbage input renders as `0` formatted, never `"EGP NaN"`.
+- **Coverage:** product cards (`ProductItem`), product detail, cart line totals, `CheckOut` summary, `/placeorder` summary, `/orders` history, and the admin surfaces (dashboard KPI, orders table, stock table, top-sellers, customers table, revenue chart tooltip/axis).
+- **Chart exception:** `RevenueChart` uses a local compact `en-US` formatter with `maximumFractionDigits: 0` for axis ticks (whole-EGP labels), and `formatCurrency` for the precise tooltip value.
 
-### 2.2 Dates — `formatDate` (`ar-EG`)
+### 2.2 Dates — `formatDate` (`en-US`, `Africa/Cairo`)
 
-The same module provides one date formatter, replacing every hardcoded `en-GB`/`en-US`/default-locale call:
+The same module provides one date formatter, in English and **pinned to Egypt's timezone** so a customer and the admin never see an order dated a day apart regardless of where the server or client runs:
 
 ```ts
 export function formatDate(value: Date | string | number): string {
-  return new Intl.DateTimeFormat("ar-EG", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(new Date(value));
+    timeZone: "Africa/Cairo", // enforced everywhere
+  }).format(new Date(value)); // -> "May 24, 2026"
 }
 ```
 
-Used by order history (via `getUserOrders`, formatted server-side), the admin orders table, the admin customers "Joined Date", the admin review list, and the storefront `ProductReviews` list.
+Used by order history (via `getUserOrders`, formatted server-side), the admin orders table, the admin customers "Joined Date", the admin review list, and the storefront `ProductReviews` list. `RevenueChart` likewise formats its month buckets with `en-US` + `Africa/Cairo`.
 
-### 2.3 Error handling — Arabic-first via `toPublicMessage`
+### 2.3 Error handling — English via `toPublicMessage`
 
 All server actions catch internally and return `{ success, message | error }`; they never throw raw errors to the client. The normalizer lives in [src/lib/auth-guards.ts](../src/lib/auth-guards.ts):
 
 ```ts
 export function toPublicMessage(
   error: unknown,
-  fallback = "حدث خطأ غير متوقع. برجاء المحاولة مرة أخرى."
+  fallback = "An unexpected error occurred. Please try again."
 ): string {
   return error instanceof PublicError ? error.message : fallback;
 }
 ```
 
-- **Safe passthrough:** only `PublicError` subclasses (business rules, `AuthError`) surface their own message. Everything else (DB failures, bugs) is masked behind the Arabic generic fallback — no stack traces or raw DB strings leak.
-- **Arabic-first strings** the shopper can encounter:
+- **Safe passthrough:** only `PublicError` subclasses (business rules, `AuthError`) surface their own message. Everything else (DB failures, bugs) is masked behind the generic fallback — no stack traces or raw DB strings leak.
+- **User-facing strings** the shopper can encounter:
 
 | Situation | Message |
 |---|---|
-| Not signed in | `غير مصرّح: يجب تسجيل الدخول أولاً.` |
-| Not an admin | `غير مصرّح: هذه العملية تتطلب صلاحيات المسؤول.` |
-| Invalid order details | `بيانات الطلب غير صالحة. برجاء مراجعة معلوماتك.` |
-| Card payment attempted | `الدفع بالبطاقة غير متاح حالياً. برجاء اختيار الدفع عند الاستلام.` |
-| Out of stock at checkout | `المنتج ذو الحجم {size} غير متوفر بالكمية المطلوبة.` |
-| Order placement failed (fallback) | `تعذّر إتمام طلبك. برجاء المحاولة مرة أخرى.` |
-| Rating out of range | `التقييم يجب أن يكون بين 1 و 5.` |
-| Review without a delivered order | `يمكنك تقييم المنتجات من الطلبات التي تم توصيلها فقط.` |
-| Duplicate review | `لقد قمت بتقييم هذا المنتج من قبل.` |
-| Review submitted | `تم إرسال تقييمك وهو قيد مراجعة الإدارة.` |
+| Not signed in | `Unauthorized: you must be logged in.` |
+| Not an admin | `Unauthorized: admin privileges required.` |
+| Invalid order details | `Invalid order details. Please review the highlighted fields.` |
+| Card payment attempted | `Card payments are not available yet. Please choose Cash on Delivery.` |
+| Out of stock at checkout | `Product size {size} is not available in the requested quantity.` |
+| Order placement failed (fallback) | `Failed to place your order. Please try again.` |
+| Rating out of range | `Rating must be between 1 and 5.` |
+| Review without a delivered order | `You can only review products from delivered orders.` |
+| Duplicate review | `You have already reviewed this product.` |
+| Review submitted | `Review submitted and is pending admin approval.` |
 
-> **Note:** the ReviewModal component already presented Arabic copy to the user; the server layer is now aligned with it, so the message a shopper sees is Arabic regardless of whether it originates in the component or bubbles up from the action.
+> **Note (Phase 7):** the app was pivoted from Arabic-first to **English** formatting and messaging, with all date/time operations pinned to `Africa/Cairo`. The governorate names in `src/lib/shipping.ts` remain Arabic — they are the DB/enum values (the `orderInputSchema` governorate enum and stored order data), not display labels, so they were deliberately left untouched.
 
 ---
 
@@ -283,7 +285,7 @@ Each order card shows its number, `formatDate(createdAt)`, per-item name/image/s
 
 Reviewing is gated on a **delivered purchase** and is one-review-per-product-per-user:
 
-1. On `/product/[id]`, a signed-in shopper opens the **`ReviewModal`** (Arabic RTL: star picker + optional comment, max 500 chars in the textarea).
+1. On `/product/[id]`, a signed-in shopper opens the **`ReviewModal`** (English: star picker + optional comment, max 500 chars in the textarea).
 2. Submitting calls `submitReview({ productId, rating, comment })`.
 3. The server (`submitReview`) validates the payload (`reviewInputSchema`: integer rating 1–5, comment trimmed/optional up to 2000 chars), then confirms the user has a `DELIVERED` order containing that product. If not: `يمكنك تقييم المنتجات من الطلبات التي تم توصيلها فقط.`
 4. **Comment is optional** — an empty comment is stored as SQL `NULL` (the `Review.comment` column is nullable), so a rating-only review succeeds. (This was previously a runtime failure; it is now correct and regression-tested.)

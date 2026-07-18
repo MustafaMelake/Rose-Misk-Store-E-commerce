@@ -75,18 +75,18 @@ export const auth = betterAuth({
       await resend.emails.send({
         from: EMAIL_FROM,
         to: user.email,
-        subject: "إعادة تعيين كلمة المرور — Rose Misk",
+        subject: "Reset your password — Rose Misk",
         html: `
-          <div style="font-family: sans-serif; line-height: 1.8; direction: rtl; text-align: right;">
-            <h2>إعادة تعيين كلمة المرور</h2>
-            <p>لقد تلقّينا طلباً لإعادة تعيين كلمة مرور حسابك في روز مسك.</p>
+          <div style="font-family: sans-serif; line-height: 1.8;">
+            <h2>Reset your password</h2>
+            <p>We received a request to reset the password for your Rose Misk account.</p>
             <p>
               <a href="${url}"
                  style="display:inline-block;padding:12px 24px;background:#000;color:#fff;text-decoration:none;border-radius:8px;">
-                إعادة تعيين كلمة المرور
+                Reset Password
               </a>
             </p>
-            <p style="color:#666;font-size:12px;">إذا لم تطلب ذلك، يمكنك تجاهل هذه الرسالة بأمان.</p>
+            <p style="color:#666;font-size:12px;">If you didn't request this, you can safely ignore this email.</p>
           </div>
         `,
       });

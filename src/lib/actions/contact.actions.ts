@@ -17,7 +17,7 @@ export async function sendContactMessage(input: unknown) {
     if (!parsed.success) {
       return {
         success: false,
-        error: "برجاء التأكد من صحة الاسم والبريد والرسالة.",
+        error: "Please make sure your name, email, and message are valid.",
       };
     }
     const { name, email, message } = parsed.data;
@@ -26,7 +26,7 @@ export async function sendContactMessage(input: unknown) {
       return {
         success: false,
         error:
-          "خدمة إرسال الرسائل غير متاحة حالياً. برجاء التواصل معنا عبر واتساب أو البريد الإلكتروني مباشرة.",
+          "Messaging is currently unavailable. Please contact us directly via WhatsApp or email.",
       };
     }
 
@@ -34,13 +34,13 @@ export async function sendContactMessage(input: unknown) {
       from: EMAIL_FROM,
       to: CONTACT_TO,
       replyTo: email,
-      subject: `رسالة تواصل جديدة من ${name}`,
+      subject: `New contact message from ${name}`,
       html: `
-        <div style="font-family: sans-serif; line-height: 1.8; direction: rtl; text-align: right;">
-          <h2>رسالة جديدة من نموذج التواصل</h2>
-          <p><strong>الاسم:</strong> ${name}</p>
-          <p><strong>البريد الإلكتروني:</strong> ${email}</p>
-          <p><strong>الرسالة:</strong></p>
+        <div style="font-family: sans-serif; line-height: 1.8;">
+          <h2>New message from the contact form</h2>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Message:</strong></p>
           <p style="white-space: pre-wrap;">${message}</p>
         </div>
       `,
@@ -53,7 +53,7 @@ export async function sendContactMessage(input: unknown) {
       success: false,
       error: toPublicMessage(
         error,
-        "تعذّر إرسال رسالتك الآن. برجاء المحاولة لاحقاً."
+        "Could not send your message right now. Please try again later."
       ),
     };
   }

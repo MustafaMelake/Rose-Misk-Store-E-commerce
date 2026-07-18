@@ -44,8 +44,14 @@ export function RevenueChart({ orders }: RevenueChartProps) {
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       months.push({
-        name: d.toLocaleString("default", { month: "short" }),
-        fullMonth: d.toLocaleString("default", { month: "long" }),
+        name: d.toLocaleString("en-US", {
+          month: "short",
+          timeZone: "Africa/Cairo",
+        }),
+        fullMonth: d.toLocaleString("en-US", {
+          month: "long",
+          timeZone: "Africa/Cairo",
+        }),
         year: d.getFullYear(),
         revenue: 0,
         orderCount: 0,
@@ -55,7 +61,10 @@ export function RevenueChart({ orders }: RevenueChartProps) {
     // توزيع الأوردرات على الشهور
     orders.forEach((order) => {
       const date = new Date(order.createdAt);
-      const monthName = date.toLocaleString("default", { month: "short" });
+      const monthName = date.toLocaleString("en-US", {
+        month: "short",
+        timeZone: "Africa/Cairo",
+      });
       const year = date.getFullYear();
 
       const monthEntry = months.find(
@@ -71,10 +80,10 @@ export function RevenueChart({ orders }: RevenueChartProps) {
     return months;
   }, [orders]);
 
-  // دالة تنسيق العملة — compact ar-EG variant (no fraction digits) for
-  // axis ticks/tooltips; the shared formatCurrency shows 2dp everywhere else.
+  // Compact en-US EGP variant (no fraction digits) for axis ticks/tooltips;
+  // the shared formatCurrency shows 2dp everywhere else.
   const formatEGP = (value: number) =>
-    new Intl.NumberFormat("ar-EG", {
+    new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "EGP",
       maximumFractionDigits: 0,

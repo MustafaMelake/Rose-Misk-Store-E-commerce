@@ -57,7 +57,7 @@ describe("Category Server Actions", () => {
 
       // Assert: the raw message must NOT leak to the client.
       expect(result.success).toBe(false);
-      expect(result.error).toBe("حدث خطأ ما");
+      expect(result.error).toBe("Something went wrong.");
       expect(result.error).not.toBe("Database connection failed");
     });
   });

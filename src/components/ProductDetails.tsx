@@ -78,8 +78,8 @@ const ProductDetails: React.FC<{ product: ProductDetail }> = ({ product }) => {
     if (selectedVariant && inCart + 1 > selectedVariant.stock) {
       setError(
         selectedVariant.stock > 0
-          ? `الحد المتاح ${selectedVariant.stock} قطعة فقط في المخزون`
-          : "هذا الحجم غير متوفر حالياً"
+          ? `Only ${selectedVariant.stock} left in stock`
+          : "This size is currently unavailable"
       );
       return;
     }

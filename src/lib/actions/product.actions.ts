@@ -38,7 +38,7 @@ export async function getAdminProducts() {
     console.error("Error fetching products:", error);
     return {
       success: false,
-      error: toPublicMessage(error, "تعذّر تحميل المنتجات."),
+      error: toPublicMessage(error, "Failed to fetch products."),
     };
   }
 }
@@ -54,7 +54,7 @@ export async function createProduct(input: unknown) {
     if (!parsed.success) {
       return {
         success: false,
-        error: parsed.error.issues[0]?.message ?? "بيانات المنتج غير صالحة.",
+        error: parsed.error.issues[0]?.message ?? "Invalid product data.",
       };
     }
     const data = parsed.data;
@@ -92,7 +92,7 @@ export async function createProduct(input: unknown) {
     return { success: true, data: newProduct };
   } catch (error) {
     console.error("PRISMA ERROR:", error);
-    return { success: false, error: toPublicMessage(error, "حدث خطأ ما") };
+    return { success: false, error: toPublicMessage(error, "Something went wrong.") };
   }
 }
 
@@ -110,7 +110,7 @@ export async function deleteProduct(productId: number) {
     console.error("Delete Error:", error);
     return {
       success: false,
-      error: toPublicMessage(error, "فشل في حذف المنتج"),
+      error: toPublicMessage(error, "Failed to delete product."),
     };
   }
 }
@@ -119,7 +119,7 @@ export async function getProductById(id: string) {
   try {
     const parsedId = parseInt(id);
     if (isNaN(parsedId)) {
-      return { success: false, error: "معرّف المنتج غير صالح." };
+      return { success: false, error: "Invalid Product ID." };
     }
 
     const product = await prisma.product.findUnique({
@@ -142,26 +142,26 @@ export async function getProductById(id: string) {
       },
     });
 
-    if (!product) return { success: false, error: "المنتج غير موجود." };
+    if (!product) return { success: false, error: "Product not found." };
 
     return { success: true, data: serializeProduct(product) };
   } catch (error) {
     console.error("Get Product Error:", error);
-    return { success: false, error: "حدث خطأ في قاعدة البيانات." };
+    return { success: false, error: "A database error occurred." };
   }
 }
 
 export async function updateProduct(id: number, input: unknown) {
   try {
     await requireAdmin();
-    if (isNaN(id)) throw new PublicError("معرّف المنتج غير صالح.");
+    if (isNaN(id)) throw new PublicError("Invalid Product ID.");
 
     // Same validation as create (prices, stock, unique volumes, image hosts).
     const parsed = productUpdateSchema.safeParse(input);
     if (!parsed.success) {
       return {
         success: false,
-        error: parsed.error.issues[0]?.message ?? "بيانات المنتج غير صالحة.",
+        error: parsed.error.issues[0]?.message ?? "Invalid product data.",
       };
     }
     const data = parsed.data;
@@ -219,7 +219,7 @@ export async function updateProduct(id: number, input: unknown) {
     console.error("CRITICAL DATABASE ERROR:", error?.message || error);
     return {
       success: false,
-      error: toPublicMessage(error, "حدث خطأ غير معروف أثناء التحديث."),
+      error: toPublicMessage(error, "An unknown error occurred during the update."),
     };
   }
 }

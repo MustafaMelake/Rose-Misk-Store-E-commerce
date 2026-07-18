@@ -97,7 +97,7 @@ The live DB had been shaped by `db push`, so the recorded migration history had 
 | Control | Setting | Why |
 |---|---|---|
 | Email verification | `requireEmailVerification: isEmailConfigured`, `sendOnSignUp: isEmailConfigured` | Closes the "register on a victim's email" takeover vector — **gated on a mailer existing** so it degrades gracefully instead of locking users out (see below) |
-| Password reset | `emailAndPassword.sendResetPassword` | Mails a tokenized `/reset-password` link (Arabic RTL); no-ops with a warning if no mailer (G5) |
+| Password reset | `emailAndPassword.sendResetPassword` | Mails a tokenized `/reset-password` link (English); no-ops with a warning if no mailer (G5) |
 | Password policy | `minPasswordLength: 8`, `maxPasswordLength: 128` | Baseline credential hygiene |
 | Role field | `additionalFields.role.type: ["ADMIN","USER"]`, **`input: false`** | Literal-array → strict `"ADMIN" \| "USER"` union; `input:false` blocks self-elevation at sign-up |
 | Account linking | `trustedProviders: ["google","facebook"]` only | Auto-links only where the provider verifies the email |
@@ -140,7 +140,7 @@ export async function requireAdmin() { const u = await requireUser(); if (u.role
 ```
 
 - `getCurrentUser` is wrapped in **React `cache()`**, so a layout, its pages, and any actions in the same request share **one** `getSession` call.
-- `PublicError`/`AuthError` are the only errors whose messages reach the client (all Arabic-first); `toPublicMessage` masks everything else.
+- `PublicError`/`AuthError` are the only errors whose messages reach the client (all English); `toPublicMessage` masks everything else.
 
 ### 3.4 Guard coverage — the security matrix
 
@@ -170,7 +170,7 @@ export async function requireAdmin() { const u = await requireUser(); if (u.role
 | `orderItemsInputSchema` | Empty/oversized carts | non-empty array of `{ id>0, size 1–50, quantity 1..MAX_CART_QTY }` |
 | `cartUpdateSchema` | Bad cart writes | `id>0`, `size 1–50`, **`quantity 0..20`** (0 = remove) |
 | `cartMergeSchema` | Corrupt guest payloads | record-of-records; per-line quantity clamped to `[1,20]`; bad ids/sizes rejected |
-| `reviewInputSchema` | Bad reviews | `id>0`, **integer `rating` 1–5** (Arabic message), `comment` trimmed/optional ≤ 2000 |
+| `reviewInputSchema` | Bad reviews | `id>0`, **integer `rating` 1–5** (English message), `comment` trimmed/optional ≤ 2000 |
 | `variantInputSchema` | Bad money/stock | `volume ≤ 30`, **`price ≥ 0`, ≤ 99,999,999.99, ≤ 2 dp**, **`stock` integer ≥ 0** |
 | `variantsInputSchema` | Duplicate variants | ≥ 1 variant; **duplicate volumes rejected** (case-insensitive) |
 | `productCreateSchema` / `productUpdateSchema` | Bad product payloads | built on the variant schema; `images` must be HTTPS UploadThing URLs (`utfs.io` / `*.ufs.sh`), ≤ 8; **`rating` intentionally absent** |
@@ -205,7 +205,7 @@ export async function requireAdmin() { const u = await requireUser(); if (u.role
 `createOrder` ([src/lib/actions/order.actions.ts](../src/lib/actions/order.actions.ts)) is authenticated-only and treats **all** client input as untrusted:
 
 1. **`requireUser()`** — guests are rejected here (aligned with the `/placeorder` middleware redirect). Identity is the session's, never the payload's.
-2. **Validate** `orderInputSchema` + `orderItemsInputSchema`; invalid → returns `fieldErrors` (Arabic, per order-input field) so the checkout form can render errors under the offending inputs (G11), no DB work.
+2. **Validate** `orderInputSchema` + `orderItemsInputSchema`; invalid → returns `fieldErrors` (English, per order-input field) so the checkout form can render errors under the offending inputs (G11), no DB work.
 3. **Normalize duplicates** — duplicate `(id, size)` lines are merged (quantities summed) via a `Map`, so a variant isn't stock-checked or created twice.
 4. **Reject `CARD`** — no gateway is wired; an un-payable order is never created.
 5. **Transaction:** for each line, look up the variant, then perform an **atomic conditional decrement**:
@@ -302,7 +302,7 @@ The commerce engine (auth, validation, pricing, stock, orders, revenue, reviews)
 > **Phase 6 — UI/UX Realignment (Cross-Document Audit follow-up).** All 15 audit gaps (G1–G15) closed across three batches. ✅
 > **Batch 1 — DONE:** G5 (forgot/reset password), G7 (email-verification journey + graceful degradation), G14 (login return-path), G15 (localized `/unauthorized`).
 > **Batch 2 — DONE:** G1 (live order-status refresh on `/orders`), G2/G3 (removed unreachable `AWAITING_PAYMENT`/`PAID` from admin controls + state machine), G6 (COD-only payment UI), G12 (`/order-confirmation/[id]` receipt page).
-> **Batch 3 — DONE:** G4 (contact form → real Resend-backed `sendContactMessage`), G10 (checkout-time cart reconciliation), G11 (field-level Arabic checkout errors), G13 (stock-ceiling feedback on product + cart pages), G8 (deleted `clearUserCart`), G9 (dead guest branch removed — completed in Batch 2).
+> **Batch 3 — DONE:** G4 (contact form → real Resend-backed `sendContactMessage`), G10 (checkout-time cart reconciliation), G11 (field-level checkout errors), G13 (stock-ceiling feedback on product + cart pages), G8 (deleted `clearUserCart`), G9 (dead guest branch removed — completed in Batch 2).
 
 ### 7.1 DTO / serialization honesty (Medium)
 - `serializeProduct<T>()` returns `... as T` — the static type still claims `Decimal` while the runtime value is `number`. `ShopContext` compensates with `as unknown as Product[]`.

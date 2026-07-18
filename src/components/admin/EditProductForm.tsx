@@ -79,7 +79,7 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
       router.push("/admin/products");
       router.refresh();
     } else {
-      setError(result.error || "فشل في تحديث المنتج");
+      setError(result.error || "Failed to update product.");
       setLoading(false);
     }
   };
@@ -245,11 +245,11 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
                 onClientUploadComplete={(res) => {
                   if (res && res.length > 0) {
                     setImages([res[0].url]);
-                    alert("تم الرفع بنجاح!");
+                    alert("Uploaded successfully!");
                   }
                 }}
                 onUploadError={(error: Error) => {
-                  alert(`حدث خطأ أثناء الرفع: ${error.message}`);
+                  alert(`Upload failed: ${error.message}`);
                 }}
               />
             </div>
@@ -258,7 +258,7 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
               <div className="relative w-32 h-32 mx-auto">
                 <img
                   src={images[0]}
-                  alt="معاينة"
+                  alt="Preview"
                   className="w-full h-full object-cover rounded-md border dark:border-zinc-800"
                 />
                 <div className="absolute -top-2 -right-2 bg-gold-base text-white text-[10px] px-2 py-0.5 rounded-full shadow-lg">

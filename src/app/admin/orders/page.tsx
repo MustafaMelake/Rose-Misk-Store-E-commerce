@@ -23,7 +23,7 @@ export default function AdminOrdersPage() {
       if (response.success && response.orders) {
         setOrders(response.orders);
       } else {
-        alert(response.message || "فشل في جلب الطلبات");
+        alert(response.message || "Failed to fetch orders.");
       }
       setLoading(false);
     };
@@ -46,7 +46,7 @@ export default function AdminOrdersPage() {
         )
       );
     } else {
-      alert("حدث خطأ أثناء تحديث حالة الطلب");
+      alert("Something went wrong while updating the order status.");
     }
 
     setUpdatingId(null);
@@ -88,8 +88,8 @@ export default function AdminOrdersPage() {
               <span className="text-neutral-400 dark:text-neutral-600">.</span>
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400 mt-3 text-lg font-medium">
-              إدارة الطلبات والعمليات ( {filteredOrders.length} طلب معروض من أصل{" "}
-              {orders.length} )
+              Order management ( {filteredOrders.length} of {orders.length}{" "}
+              shown )
             </p>
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function AdminOrdersPage() {
                     colSpan={5}
                     className="py-16 text-center text-neutral-400 dark:text-neutral-600 font-medium tracking-wide"
                   >
-                    لا توجد طلبات تطابق هذا التصنيف.
+                    No orders match this filter.
                   </td>
                 </tr>
               ) : (

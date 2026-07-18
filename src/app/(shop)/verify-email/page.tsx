@@ -20,8 +20,8 @@ const VerifyEmail = () => {
   const [resending, setResending] = useState(false);
   const [notice, setNotice] = useState("");
 
-  // When explicitly disabled, surface a clear localized note instead of a
-  // dead "check your inbox" screen that will never receive a mail.
+  // When explicitly disabled, surface a clear note instead of a dead
+  // "check your inbox" screen that will never receive a mail.
   const emailEnabled = process.env.NEXT_PUBLIC_EMAIL_ENABLED !== "false";
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const VerifyEmail = () => {
 
   const handleResend = async () => {
     if (!email) {
-      setNotice("لا يوجد بريد إلكتروني لإعادة الإرسال إليه.");
+      setNotice("There's no email to resend to.");
       return;
     }
     setResending(true);
@@ -43,9 +43,9 @@ const VerifyEmail = () => {
         email,
         callbackURL: "/verify-email",
       });
-      setNotice("تم إرسال رابط تأكيد جديد إلى بريدك الإلكتروني.");
+      setNotice("A new verification link has been sent to your email.");
     } catch {
-      setNotice("تعذّر إرسال الرابط الآن. برجاء المحاولة لاحقاً.");
+      setNotice("Couldn't send the link right now. Please try again later.");
     } finally {
       setResending(false);
     }
@@ -53,16 +53,13 @@ const VerifyEmail = () => {
 
   return (
     <>
-      <div
-        className="flex justify-center items-center min-h-[80vh] px-4 py-10 animate-fadeIn"
-        dir="rtl"
-      >
+      <div className="flex justify-center items-center min-h-[80vh] px-4 py-10 animate-fadeIn">
         <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl p-8 border border-gray-100 dark:border-zinc-800 text-center">
           {isPending ? (
             <div className="flex flex-col items-center gap-4 py-8">
               <Loader2 className="w-8 h-8 text-gold-base animate-spin" />
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                جارٍ التحقق من حالة حسابك...
+                Checking your account status...
               </p>
             </div>
           ) : isVerified ? (
@@ -74,23 +71,23 @@ const VerifyEmail = () => {
                 </div>
               </div>
               <h2 className="text-2xl prata-regular text-gold-base mb-2">
-                حسابك جاهز
+                Your account is ready
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
-                تم تفعيل حسابك بنجاح. يمكنك الآن متابعة التسوّق.
+                Your account is active. You can continue shopping.
               </p>
               <div className="flex flex-col gap-3">
                 <Link
                   href="/"
                   className="w-full py-3 bg-black dark:bg-gold-base text-white dark:text-black font-semibold rounded-xl hover:opacity-90 transition-all"
                 >
-                  العودة للمتجر
+                  Back to the store
                 </Link>
                 <Link
                   href="/orders"
                   className="w-full py-3 border border-gray-200 dark:border-zinc-700 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  طلباتي
+                  My Orders
                 </Link>
               </div>
             </>
@@ -103,20 +100,21 @@ const VerifyEmail = () => {
                 </div>
               </div>
               <h2 className="text-2xl prata-regular text-gold-base mb-2">
-                أكّد بريدك الإلكتروني
+                Verify your email
               </h2>
 
               {emailEnabled ? (
                 <>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                    لقد أرسلنا رابط تأكيد إلى
+                    We&apos;ve sent a verification link to
                   </p>
                   <p className="text-sm font-semibold dark:text-white mb-6 break-all">
-                    {email || "بريدك الإلكتروني"}
+                    {email || "your email"}
                   </p>
                   <p className="text-xs text-gray-400 mb-8 leading-relaxed">
-                    افتح الرسالة واضغط على رابط التأكيد لتفعيل حسابك. لم تصلك
-                    الرسالة؟ تحقق من مجلد الرسائل غير المرغوب فيها أو أعد الإرسال.
+                    Open the email and click the verification link to activate
+                    your account. Didn&apos;t get it? Check your spam folder or
+                    resend.
                   </p>
 
                   {notice && (
@@ -130,13 +128,13 @@ const VerifyEmail = () => {
                     disabled={resending}
                     className="w-full py-3 bg-black dark:bg-gold-base text-white dark:text-black font-semibold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 mb-3"
                   >
-                    {resending ? "جارٍ الإرسال..." : "إعادة إرسال رابط التأكيد"}
+                    {resending ? "Sending..." : "Resend verification link"}
                   </button>
                 </>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                  خدمة البريد الإلكتروني غير مفعّلة في هذه البيئة، لذا تم تفعيل
-                  حسابك تلقائياً. يمكنك تسجيل الدخول مباشرةً.
+                  Email delivery is disabled in this environment, so your account
+                  was activated automatically. You can log in directly.
                 </p>
               )}
 
@@ -144,7 +142,7 @@ const VerifyEmail = () => {
                 href="/login"
                 className="inline-block text-sm text-gold-base font-semibold hover:underline"
               >
-                العودة لتسجيل الدخول
+                Back to login
               </Link>
             </>
           )}

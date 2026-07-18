@@ -154,7 +154,7 @@ describe("Order Server Actions", () => {
 
       // Assert
       expect(result.success).toBe(false);
-      expect(result.message).toContain("غير متوفر بالكمية المطلوبة");
+      expect(result.message).toContain("not available in the requested quantity");
       // Flagged as stock-related so the client can reconcile the cart (G10)
       expect(result.reason).toBe("insufficient_stock");
       expect(prisma.order.create).not.toHaveBeenCalled();
@@ -182,7 +182,7 @@ describe("Order Server Actions", () => {
 
       // Assert — rejected before any DB work
       expect(result.success).toBe(false);
-      expect(result.message).toContain("الدفع بالبطاقة");
+      expect(result.message).toContain("Card payments");
       expect(prisma.productVariant.updateMany).not.toHaveBeenCalled();
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
@@ -190,7 +190,7 @@ describe("Order Server Actions", () => {
     it("should reject checkout for unauthenticated users", async () => {
       // Arrange: no session — the auth guard throws
       vi.mocked(requireUser).mockRejectedValueOnce(
-        new AuthError("غير مصرّح: يجب تسجيل الدخول أولاً.")
+        new AuthError("Unauthorized: admin privileges required.")
       );
 
       // Act
@@ -198,7 +198,7 @@ describe("Order Server Actions", () => {
 
       // Assert — rejected before any validation or DB work
       expect(result.success).toBe(false);
-      expect(result.message).toContain("تسجيل الدخول");
+      expect(result.message).toContain("Unauthorized");
       expect(prisma.productVariant.updateMany).not.toHaveBeenCalled();
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
@@ -380,7 +380,7 @@ describe("Order Server Actions", () => {
 
       // Assert: no writes, clear rejection
       expect(result.success).toBe(false);
-      expect(result.message).toContain("لا يمكن تغيير حالة الطلب");
+      expect(result.message).toContain("Cannot change order status");
       expect(prisma.order.update).not.toHaveBeenCalled();
       expect(prisma.order.updateMany).not.toHaveBeenCalled();
     });

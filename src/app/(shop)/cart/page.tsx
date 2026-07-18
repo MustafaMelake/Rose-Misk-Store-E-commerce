@@ -36,7 +36,7 @@ const Cart: React.FC = () => {
   const handleIncrement = (item: CartDisplayItem) => {
     const stock = getVariantStock(item.id, item.size);
     if (item.quantity + 1 > stock) {
-      setStockNotice(`الحد المتاح ${stock} قطعة فقط من "${item.name}".`);
+      setStockNotice(`Only ${stock} in stock for "${item.name}".`);
       return;
     }
     setStockNotice("");
@@ -107,10 +107,7 @@ const Cart: React.FC = () => {
         </div>
 
         {stockNotice && (
-          <p
-            dir="rtl"
-            className="mb-8 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 p-3 rounded-xl text-sm text-center border border-amber-100 dark:border-amber-900/30"
-          >
+          <p className="mb-8 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 p-3 rounded-xl text-sm text-center border border-amber-100 dark:border-amber-900/30">
             {stockNotice}
           </p>
         )}

@@ -18,7 +18,7 @@ export async function getCategories() {
     console.error("PRISMA ERROR:", error);
     return {
       success: false,
-      error: toPublicMessage(error, "حدث خطأ ما"),
+      error: toPublicMessage(error, "Something went wrong."),
     };
   }
 }

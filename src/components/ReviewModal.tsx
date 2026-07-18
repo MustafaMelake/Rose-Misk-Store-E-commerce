@@ -34,7 +34,7 @@ export default function ReviewModal({
     if (rating === 0) {
       setStatusMessage({
         success: false,
-        text: "الرجاء اختيار تقييم بالنجوم أولاً.",
+        text: "Please select a star rating first.",
       });
       return;
     }
@@ -53,7 +53,7 @@ export default function ReviewModal({
     if (result.success) {
       setStatusMessage({
         success: true,
-        text: "تم إرسال تقييمك بنجاح وقيد مراجعة الإدارة حالياً.",
+        text: "Your review has been submitted and is pending admin approval.",
       });
       setRating(0);
       setComment("");
@@ -65,7 +65,7 @@ export default function ReviewModal({
     } else {
       setStatusMessage({
         success: false,
-        text: result.error || "حدث خطأ أثناء إرسال التقييم.",
+        text: result.error || "Something went wrong while submitting your review.",
       });
     }
   };
@@ -97,10 +97,10 @@ export default function ReviewModal({
         {/* رأس المودال بالخط السيريف الفخم */}
         <div className="text-center mb-6">
           <h3 className="prata-regular text-2xl md:text-3xl text-black dark:text-white mb-2">
-            شاركنا رأيك
+            Share your thoughts
           </h3>
           <p className="text-sm text-muted-foreground line-clamp-1">
-            تقييمك لمنتج:{" "}
+            Your review for:{" "}
             <span className="font-semibold text-black dark:text-white">
               {productName}
             </span>
@@ -132,15 +132,11 @@ export default function ReviewModal({
           </div>
         ) : (
           /* فورم التقييم */
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-5 text-right"
-            dir="rtl"
-          >
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* اختيار النجوم التفاعلي */}
             <div className="flex flex-col items-center justify-center gap-2 py-2">
               <label className="text-sm font-medium text-muted-foreground mb-1">
-                انقر لاختيار التقييم
+                Click to choose a rating
               </label>
               <div className="flex items-center gap-2">
                 {[1, 2, 3, 4, 5].map((index) => {
@@ -180,14 +176,14 @@ export default function ReviewModal({
             {/* صندوق النص */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-black-light dark:text-zinc-300">
-                اكتب تعليقك (اختياري)
+                Write your comment (optional)
               </label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="ما هي تجربتك مع هذا العطر؟ ثباته، فوحانه..."
+                placeholder="How was your experience with this fragrance? Longevity, sillage..."
                 rows={4}
-                className="inputStyle resize-none text-right placeholder:text-gray-400 dark:bg-zinc-900 dark:border-zinc-800 dark:focus:border-gold-base"
+                className="inputStyle resize-none placeholder:text-gray-400 dark:bg-zinc-900 dark:border-zinc-800 dark:focus:border-gold-base"
                 maxLength={500}
               />
             </div>
@@ -209,7 +205,7 @@ export default function ReviewModal({
                 {isSubmitting ? (
                   <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  "إرسال التقييم"
+                  "Submit Review"
                 )}
               </button>
 
@@ -219,7 +215,7 @@ export default function ReviewModal({
                 disabled={isSubmitting}
                 className="px-5 py-3 border border-border rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors"
               >
-                إلغاء
+                Cancel
               </button>
             </div>
           </form>

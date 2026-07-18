@@ -102,7 +102,7 @@ const SignUp = () => {
               type="submit"
               className="w-full py-3 mt-4 bg-gold-base text-black font-bold rounded-xl hover:bg-gold-light transition-all shadow-lg disabled:opacity-50"
             >
-              {loading ? "جاري إنشاء الحساب..." : "Sign Up"}
+              {loading ? "Creating account..." : "Sign Up"}
             </button>
           </form>
 

@@ -84,9 +84,9 @@ export const reviewInputSchema = z.object({
   // User-facing validation message follows the Arabic-first error policy.
   rating: z
     .number()
-    .int({ message: "التقييم يجب أن يكون بين 1 و 5." })
-    .min(1, { message: "التقييم يجب أن يكون بين 1 و 5." })
-    .max(5, { message: "التقييم يجب أن يكون بين 1 و 5." }),
+    .int({ message: "Rating must be between 1 and 5." })
+    .min(1, { message: "Rating must be between 1 and 5." })
+    .max(5, { message: "Rating must be between 1 and 5." }),
   comment: z.string().trim().max(2000).optional(),
 });
 

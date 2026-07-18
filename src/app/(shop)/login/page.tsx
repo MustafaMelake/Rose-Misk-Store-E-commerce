@@ -87,11 +87,11 @@ const Login = () => {
         signInError.status === 403
       ) {
         setError(
-          "لم يتم تأكيد بريدك الإلكتروني بعد. تحقق من صندوق الوارد أو أعد إرسال رابط التأكيد."
+          "Your email hasn't been verified yet. Check your inbox or resend the verification link."
         );
         setNeedsVerification(true);
       } else {
-        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+        setError("Incorrect email or password.");
       }
       setLoading(false);
     } else {
@@ -127,7 +127,7 @@ const Login = () => {
 
           {resetSuccess && !error && (
             <p className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 p-3 rounded-lg text-sm text-center mb-4 border border-emerald-100 dark:border-emerald-900/30">
-              تم تحديث كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن.
+              Your password has been updated. You can log in now.
             </p>
           )}
 
@@ -139,7 +139,7 @@ const Login = () => {
                   href={`/verify-email?email=${encodeURIComponent(form.email)}`}
                   className="inline-block mt-2 font-semibold text-gold-base hover:underline"
                 >
-                  تأكيد البريد الإلكتروني
+                  Verify email
                 </Link>
               )}
             </div>
@@ -186,7 +186,7 @@ const Login = () => {
               type="submit"
               className="w-full py-3 mt-2 bg-black dark:bg-gold-base text-white dark:text-black font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg disabled:opacity-50"
             >
-              {loading ? "جاري تسجيل الدخول..." : "Login"}
+              {loading ? "Signing in..." : "Login"}
             </button>
           </form>
 

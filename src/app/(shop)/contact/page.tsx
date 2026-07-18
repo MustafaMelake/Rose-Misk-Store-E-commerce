@@ -35,13 +35,13 @@ const Contact: React.FC = () => {
     if (result.success) {
       setStatus({
         ok: true,
-        text: "تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.",
+        text: "Your message has been sent! We'll get back to you soon.",
       });
       setFormData({ name: "", email: "", message: "" });
     } else {
       setStatus({
         ok: false,
-        text: result.error || "تعذّر إرسال رسالتك. برجاء المحاولة لاحقاً.",
+        text: result.error || "Couldn't send your message. Please try again later.",
       });
     }
   };
@@ -122,12 +122,11 @@ const Contact: React.FC = () => {
                 className="py-3 mt-2 bg-black dark:bg-gold-base text-white dark:text-black rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gold-base hover:text-black dark:hover:bg-gold-light-20 transition-all duration-300 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Send size={18} />
-                {loading ? "جارٍ الإرسال..." : "Send Message"}
+                {loading ? "Sending..." : "Send Message"}
               </motion.button>
 
               {status && (
                 <p
-                  dir="rtl"
                   className={`text-sm text-center p-3 rounded-xl border ${
                     status.ok
                       ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30"
@@ -173,7 +172,7 @@ const Contact: React.FC = () => {
               <ContactInfoItem
                 icon={<MapPin size={20} />}
                 title="Location"
-                detail="منوف، المنوفية (Menouf, Menofia)"
+                detail="Menouf, Menofia"
                 href="https://maps.google.com/?q=Menouf,Menofia,Egypt"
                 variants={itemVariants}
               />
