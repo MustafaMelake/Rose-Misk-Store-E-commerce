@@ -10,12 +10,13 @@ import { authClient } from "@/lib/auth-client";
 import ReviewModal from "@/components/ReviewModal";
 import ProductReviews from "@/components/ProductReviews";
 import { formatCurrency } from "@/lib/format";
+import { MAX_CART_QTY } from "@/lib/cart-limits";
 
 interface Variant {
   id: number;
   volume: string;
   price: number;
-  stock: number;
+  isAvailable: boolean;
 }
 
 export interface ProductDetail {
@@ -63,24 +64,22 @@ const ProductDetails: React.FC<{ product: ProductDetail }> = ({ product }) => {
     (v) => v.volume === selectedSize
   );
   const currentPrice = selectedVariant ? selectedVariant.price : defaultPrice;
-  const isOutOfStock = selectedVariant
-    ? Number(selectedVariant.stock) <= 0
-    : false;
+  const isOutOfStock = selectedVariant ? !selectedVariant.isAvailable : false;
 
   const handleAdd = () => {
     if (!selectedSize) {
       setError("Please select a size first");
       return;
     }
+    if (selectedVariant && !selectedVariant.isAvailable) {
+      setError("This size is currently unavailable");
+      return;
+    }
     // G13 — give feedback instead of silently no-op'ing when the shopper has
-    // already reached the available stock for this variant.
+    // already reached the per-item cart limit.
     const inCart = cartItems?.[product.id]?.[selectedSize] ?? 0;
-    if (selectedVariant && inCart + 1 > selectedVariant.stock) {
-      setError(
-        selectedVariant.stock > 0
-          ? `Only ${selectedVariant.stock} left in stock`
-          : "This size is currently unavailable"
-      );
+    if (inCart + 1 > MAX_CART_QTY) {
+      setError(`You can order up to ${MAX_CART_QTY} of this item per order`);
       return;
     }
     addToCart(product.id, selectedSize);
@@ -184,7 +183,7 @@ const ProductDetails: React.FC<{ product: ProductDetail }> = ({ product }) => {
                     (v) => v.volume === s
                   );
                   const isVariantOutOfStock = variant
-                    ? Number(variant.stock) <= 0
+                    ? !variant.isAvailable
                     : false;
 
                   return (

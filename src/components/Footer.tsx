@@ -60,6 +60,7 @@ const Footer = () => {
         <p className="py-5 text-center text-sm dark:text-gold-light-20">
           All Copy Right are reserverd from Rose Misk | Website is made
           <Link
+            className="text-[#D4AF37] prata-regular"
             target="blank"
             href={"https://mustafamelake-portfolio.vercel.app/"}
           >

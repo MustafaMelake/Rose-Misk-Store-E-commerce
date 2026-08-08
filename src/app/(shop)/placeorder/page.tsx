@@ -131,10 +131,10 @@ const PlaceOrder: React.FC = () => {
 
       // G11: show per-field Arabic errors under the inputs.
       setFieldErrors(result?.fieldErrors ?? {});
-      if (result?.reason === "insufficient_stock") {
-        // G10: the cart was auto-reduced to available stock — tell the shopper.
+      if (result?.reason === "unavailable") {
+        // G10: unavailable lines were dropped from the cart — tell the shopper.
         setFormError(
-          "Some items are no longer available in the requested quantity, so your cart was updated. Please review the quantities and try again."
+          "Some items are no longer available, so they were removed from your cart. Please review your order and try again."
         );
       } else {
         setFormError(

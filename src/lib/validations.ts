@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ALL_GOVERNORATES } from "@/lib/shipping";
+import { MAX_CART_QTY } from "@/lib/cart-limits";
 
 /**
  * Centralized Zod schemas for validating server-action payloads at the trust
@@ -8,8 +9,8 @@ import { ALL_GOVERNORATES } from "@/lib/shipping";
  * the database, and derive their TypeScript types from the same source.
  */
 
-/** Hard cap on how many of a single variant a cart line may hold. */
-export const MAX_CART_QTY = 20;
+/** Re-exported so server modules keep a single import for schemas + limits. */
+export { MAX_CART_QTY };
 
 /** Money never exceeds this (matches the DB `Decimal(10,2)` column). */
 const MAX_PRICE = 99_999_999.99;
@@ -125,10 +126,8 @@ export const variantInputSchema = z.object({
     .refine((v) => Math.round(v * 100) === v * 100, {
       message: "Price supports at most 2 decimal places.",
     }),
-  stock: z.coerce
-    .number()
-    .int({ message: "Stock must be a whole number." })
-    .min(0, { message: "Stock cannot be negative." }),
+  // Availability is a plain toggle — exact quantities are no longer tracked.
+  isAvailable: z.boolean().default(true),
 });
 
 /** One or more variants, with duplicate volumes rejected. */

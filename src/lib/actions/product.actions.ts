@@ -47,9 +47,9 @@ export async function createProduct(input: unknown) {
   try {
     await requireAdmin();
 
-    // Validate the untrusted admin payload: non-negative 2dp prices, integer
-    // stock, unique variant volumes, UploadThing-hosted image URLs. `rating` is
-    // deliberately NOT accepted — it is computed from approved reviews only.
+    // Validate the untrusted admin payload: non-negative 2dp prices, an
+    // availability flag, unique variant volumes, UploadThing-hosted image URLs.
+    // `rating` is deliberately NOT accepted — computed from approved reviews.
     const parsed = productCreateSchema.safeParse(input);
     if (!parsed.success) {
       return {
@@ -81,7 +81,7 @@ export async function createProduct(input: unknown) {
           create: data.variants.map((v) => ({
             volume: v.volume,
             price: v.price,
-            stock: v.stock,
+            isAvailable: v.isAvailable,
           })),
         },
       },
@@ -156,7 +156,7 @@ export async function updateProduct(id: number, input: unknown) {
     await requireAdmin();
     if (isNaN(id)) throw new PublicError("Invalid Product ID.");
 
-    // Same validation as create (prices, stock, unique volumes, image hosts).
+    // Same validation as create (prices, availability, unique volumes, hosts).
     const parsed = productUpdateSchema.safeParse(input);
     if (!parsed.success) {
       return {
@@ -186,17 +186,17 @@ export async function updateProduct(id: number, input: unknown) {
         },
       });
 
-      // Upsert variants by (productId, volume): keeps ids/stock for volumes
-      // that still exist instead of dropping and recreating every row.
+      // Upsert variants by (productId, volume): keeps ids for volumes that
+      // still exist instead of dropping and recreating every row.
       for (const v of variantInputs) {
         await tx.productVariant.upsert({
           where: { productId_volume: { productId: id, volume: v.volume } },
-          update: { price: v.price, stock: v.stock },
+          update: { price: v.price, isAvailable: v.isAvailable },
           create: {
             productId: id,
             volume: v.volume,
             price: v.price,
-            stock: v.stock,
+            isAvailable: v.isAvailable,
           },
         });
       }
@@ -432,9 +432,9 @@ export async function getInventoryProducts() {
           },
         },
       },
-      orderBy: {
-        stock: "asc",
-      },
+      // Unavailable variants first (false sorts before true) so anything that
+      // needs the admin's attention is at the top of the list.
+      orderBy: [{ isAvailable: "asc" }, { productId: "asc" }],
     });
 
     return products;

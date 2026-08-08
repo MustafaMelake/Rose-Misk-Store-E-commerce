@@ -7,6 +7,15 @@ import Link from "next/link";
 import { createProduct } from "@/lib/actions/product.actions";
 import { getCategories } from "@/lib/actions/category.actions";
 import { UploadButton } from "@/lib/uploadthing";
+import AvailabilityToggle from "@/components/admin/AvailabilityToggle";
+
+// A single editable variant row. `price` may be a string while typing in the
+// number input; `createProduct` coerces it server-side.
+type VariantRow = {
+  volume: string;
+  price: number | string;
+  isAvailable: boolean;
+};
 
 export default function AddProductPage() {
   const router = useRouter();
@@ -43,14 +52,14 @@ export default function AddProductPage() {
     setImages([value]);
   };
 
-  const [variants, setVariants] = useState([
-    { volume: "30ml", price: 0, stock: 10 },
-    { volume: "50ml", price: 0, stock: 10 },
-    { volume: "100ml", price: 0, stock: 10 },
+  const [variants, setVariants] = useState<VariantRow[]>([
+    { volume: "30ml", price: 0, isAvailable: true },
+    { volume: "50ml", price: 0, isAvailable: true },
+    { volume: "100ml", price: 0, isAvailable: true },
   ]);
 
   const handleAddVariant = () => {
-    setVariants([...variants, { volume: "", price: 0, stock: 0 }]);
+    setVariants([...variants, { volume: "", price: 0, isAvailable: true }]);
   };
 
   const handleRemoveVariant = (index: number) => {
@@ -61,8 +70,8 @@ export default function AddProductPage() {
 
   const handleVariantChange = (
     index: number,
-    field: string,
-    value: string | number
+    field: keyof VariantRow,
+    value: string | number | boolean
   ) => {
     const newVariants = [...variants] as any;
     newVariants[index][field] = value;
@@ -355,18 +364,16 @@ export default function AddProductPage() {
               </div>
               <div className="flex-1 space-y-2">
                 <label className="text-xs font-medium dark:text-zinc-400">
-                  Stock
+                  Availability
                 </label>
-                <input
-                  required
-                  type="number"
-                  min="0"
-                  value={variant.stock}
-                  onChange={(e) =>
-                    handleVariantChange(index, "stock", e.target.value)
-                  }
-                  className="w-full p-2 text-sm border dark:border-zinc-800 rounded-md bg-white dark:bg-black dark:text-white outline-none"
-                />
+                <div className="p-2">
+                  <AvailabilityToggle
+                    checked={variant.isAvailable}
+                    onChange={(next) =>
+                      handleVariantChange(index, "isAvailable", next)
+                    }
+                  />
+                </div>
               </div>
               {variants.length > 1 && (
                 <button

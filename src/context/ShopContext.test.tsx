@@ -17,6 +17,7 @@ import {
 } from "@/lib/actions/cart.actions";
 import { getUserOrders, createOrder } from "@/lib/actions/order.actions";
 import { authClient } from "@/lib/auth-client";
+import { MAX_CART_QTY } from "@/lib/cart-limits";
 
 // 1. Mock Next.js Navigation
 const mockPush = vi.fn();
@@ -60,8 +61,8 @@ const mockProducts = [
     company: "Rose Misk",
     isFeatured: true,
     variants: [
-      { id: 101, volume: "50ml", price: 100, stock: 10 },
-      { id: 102, volume: "100ml", price: 180, stock: 5 },
+      { id: 101, volume: "50ml", price: 100, isAvailable: true },
+      { id: 102, volume: "100ml", price: 180, isAvailable: false },
     ],
   },
 ];
@@ -81,10 +82,22 @@ const TestComponent = () => {
         Add 50ml
       </button>
       <button
+        data-testid="add-unavailable-btn"
+        onClick={() => context.addToCart(1, "100ml")}
+      >
+        Add 100ml
+      </button>
+      <button
         data-testid="update-btn"
         onClick={() => context.updateQuantity(1, "50ml", 0)}
       >
         Remove Item
+      </button>
+      <button
+        data-testid="overfill-btn"
+        onClick={() => context.updateQuantity(1, "50ml", 50)}
+      >
+        Set 50
       </button>
       <button data-testid="checkout-btn" onClick={context.goToCheckout}>
         Go To Checkout
@@ -155,6 +168,45 @@ describe("ShopContextProvider", () => {
     );
     expect(savedCart["1"]["50ml"]).toBe(1);
     expect(updateCartInDB).not.toHaveBeenCalled();
+  });
+
+  it("should refuse to add a variant that is not available", async () => {
+    render(
+      <ShopContextProvider>
+        <TestComponent />
+      </ShopContextProvider>
+    );
+
+    await waitFor(() => {
+      expect(getAllProducts).toHaveBeenCalled();
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByTestId("add-unavailable-btn"));
+    });
+
+    // 100ml is switched off, so nothing lands in the cart.
+    expect(screen.getByTestId("cart-count").textContent).toBe("0");
+  });
+
+  it("should clamp a quantity update to the per-item cart limit", async () => {
+    render(
+      <ShopContextProvider>
+        <TestComponent />
+      </ShopContextProvider>
+    );
+
+    await waitFor(() => {
+      expect(getAllProducts).toHaveBeenCalled();
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByTestId("overfill-btn"));
+    });
+
+    expect(screen.getByTestId("cart-count").textContent).toBe(
+      String(MAX_CART_QTY)
+    );
   });
 
   it("should sync and update database cart when user is logged in", async () => {

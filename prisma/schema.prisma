@@ -60,12 +60,13 @@ model Review {
 }
 
 model ProductVariant {
-  id        Int     @id @default(autoincrement())
-  volume    String
-  price     Decimal @db.Decimal(10, 2)
-  stock     Int     @default(0)
-  productId Int
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id     Int     @id @default(autoincrement())
+  volume String
+  price  Decimal @db.Decimal(10, 2)
+  // Availability is a simple on/off toggle — exact quantities are not tracked.
+  isAvailable Boolean @default(true)
+  productId   Int
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   orderItems OrderItem[]
   cartItems  CartItem[]

@@ -6,10 +6,15 @@ import { Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { updateProduct } from "@/lib/actions/product.actions";
 import { UploadButton } from "@/lib/uploadthing";
+import AvailabilityToggle from "@/components/admin/AvailabilityToggle";
 
-// A single editable variant row. price/stock may be strings while typing in the
-// number inputs; `updateProduct` coerces them server-side.
-type VariantRow = { volume: string; price: number | string; stock: number | string };
+// A single editable variant row. `price` may be a string while typing in the
+// number input; `updateProduct` coerces it server-side.
+type VariantRow = {
+  volume: string;
+  price: number | string;
+  isAvailable: boolean;
+};
 
 export default function EditProductForm({ initialData }: { initialData: any }) {
   if (!initialData)
@@ -35,7 +40,7 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
   const [variants, setVariants] = useState<VariantRow[]>(
     initialData?.variants?.length
       ? initialData.variants
-      : [{ volume: "50ml", price: 0, stock: 10 }]
+      : [{ volume: "50ml", price: 0, isAvailable: true }]
   );
 
   const handleImageChange = (index: number, value: string) => {
@@ -45,7 +50,7 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
   };
 
   const handleAddVariant = () => {
-    setVariants([...variants, { volume: "", price: 0, stock: 0 }]);
+    setVariants([...variants, { volume: "", price: 0, isAvailable: true }]);
   };
 
   const handleRemoveVariant = (index: number) => {
@@ -56,8 +61,8 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
 
   const handleVariantChange = (
     index: number,
-    field: string,
-    value: string | number
+    field: keyof VariantRow,
+    value: string | number | boolean
   ) => {
     const newVariants = [...variants] as any;
     newVariants[index][field] = value;
@@ -355,18 +360,16 @@ export default function EditProductForm({ initialData }: { initialData: any }) {
               </div>
               <div className="flex-1 space-y-2">
                 <label className="text-xs font-medium dark:text-zinc-400">
-                  Stock
+                  Availability
                 </label>
-                <input
-                  required
-                  type="number"
-                  min="0"
-                  value={variant.stock}
-                  onChange={(e) =>
-                    handleVariantChange(index, "stock", e.target.value)
-                  }
-                  className="w-full p-2 text-sm border dark:border-zinc-800 rounded-md bg-white dark:bg-black dark:text-white outline-none"
-                />
+                <div className="p-2">
+                  <AvailabilityToggle
+                    checked={variant.isAvailable}
+                    onChange={(next) =>
+                      handleVariantChange(index, "isAvailable", next)
+                    }
+                  />
+                </div>
               </div>
               {variants.length > 1 && (
                 <button

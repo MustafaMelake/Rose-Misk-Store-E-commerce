@@ -17,13 +17,14 @@ import {
 } from "@/lib/actions/cart.actions";
 import { authClient } from "@/lib/auth-client";
 import { createOrder, getUserOrders } from "@/lib/actions/order.actions";
+import { MAX_CART_QTY } from "@/lib/cart-limits";
 
 export type CartItems = Record<string, Record<string, number>>;
 export interface ProductVariant {
   id: number;
   volume: string;
   price: number;
-  stock: number;
+  isAvailable: boolean;
 }
 export interface Product {
   id: number;
@@ -180,26 +181,26 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
     return variant ? variant.price : 0;
   };
 
-  // Available stock for a variant, or null if the product/variant isn't loaded
-  // yet (in which case we don't block — the server still enforces stock).
-  const getVariantStock = (
+  // Whether a variant can be ordered, or null if the product/variant isn't
+  // loaded yet (in which case we don't block — the server re-checks anyway).
+  const isVariantAvailable = (
     productId: string | number,
     size: string
-  ): number | null => {
+  ): boolean | null => {
     const product = products.find((p) => String(p.id) === String(productId));
     const variant = product?.variants.find((v) => v.volume === size);
-    return variant ? variant.stock : null;
+    return variant ? variant.isAvailable : null;
   };
 
   const addToCart = async (itemId: string | number, size: string) => {
     const idStr = String(itemId);
     const currentQty = cartItems[idStr]?.[size] || 0;
 
-    // Don't let shoppers add more than what's physically in stock.
-    const stock = getVariantStock(itemId, size);
-    if (stock !== null && currentQty + 1 > stock) {
-      return;
-    }
+    // Nothing to add if the admin has switched this volume off.
+    if (isVariantAvailable(itemId, size) === false) return;
+
+    // Abuse guard only — quantities are no longer bounded by stock.
+    if (currentQty + 1 > MAX_CART_QTY) return;
 
     let cartData = structuredClone(cartItems);
     if (cartData[idStr]) {
@@ -229,9 +230,8 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
       if (cartData[idStr] && Object.keys(cartData[idStr]).length === 0)
         delete cartData[idStr];
     } else {
-      // Cap the requested quantity to the available stock.
-      const stock = getVariantStock(itemId, size);
-      finalQuantity = stock !== null ? Math.min(quantity, stock) : quantity;
+      // Cap at the per-line abuse limit the server also enforces.
+      finalQuantity = Math.min(quantity, MAX_CART_QTY);
       if (!cartData[idStr]) cartData[idStr] = {};
       cartData[idStr][size] = finalQuantity;
     }
@@ -267,10 +267,10 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
     refreshOrders();
   }, [refreshOrders]);
 
-  // G10 — when the server rejects checkout for insufficient stock, pull fresh
-  // product stock and clamp every cart line to what's actually available
-  // (dropping now-unavailable lines), so the shopper isn't stuck retrying an
-  // impossible quantity. Signed-in users' DB cart is synced to match.
+  // G10 — when the server rejects checkout because something is unavailable,
+  // pull fresh products and drop every cart line whose variant is switched off
+  // (or gone), so the shopper isn't stuck retrying an impossible order.
+  // Quantities are left alone. Signed-in users' DB cart is synced to match.
   const reconcileCartWithStock = async () => {
     const data = await getAllProducts(1, 100);
     const fresh =
@@ -279,24 +279,22 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
         : [];
     setProducts(fresh);
 
-    const stockFor = (productId: string, size: string): number => {
+    const availableFor = (productId: string, size: string): boolean => {
       const product = fresh.find((p) => String(p.id) === productId);
       const variant = product?.variants.find((v) => v.volume === size);
-      return variant ? variant.stock : 0;
+      return variant ? variant.isAvailable : false;
     };
 
     setCartItems((prev) => {
       const next: CartItems = {};
       for (const productId in prev) {
         for (const size in prev[productId]) {
-          const clamped = Math.min(prev[productId][size], stockFor(productId, size));
-          if (clamped > 0) {
+          if (availableFor(productId, size)) {
             if (!next[productId]) next[productId] = {};
-            next[productId][size] = clamped;
-          }
-          // Keep the persisted DB cart in step for signed-in users.
-          if (userId && clamped !== prev[productId][size]) {
-            updateCartInDB(Number(productId), size, clamped);
+            next[productId][size] = prev[productId][size];
+          } else if (userId) {
+            // Keep the persisted DB cart in step for signed-in users.
+            updateCartInDB(Number(productId), size, 0);
           }
         }
       }
@@ -341,8 +339,8 @@ const ShopContextProvider: React.FC<{ children: ReactNode }> = ({
 
       return { success: true, orderId: result.orderId };
     } else {
-      // G10 — auto-reduce the cart to available stock so the shopper can retry.
-      if (result.reason === "insufficient_stock") {
+      // G10 — drop unavailable lines so the shopper can retry.
+      if (result.reason === "unavailable") {
         await reconcileCartWithStock();
       }
       return {

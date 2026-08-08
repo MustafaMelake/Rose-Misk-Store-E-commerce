@@ -44,7 +44,7 @@ export default function ProductsTable({ products }: { products: any[] }) {
                   Status
                 </th>
                 <th className="px-6 py-4 font-semibold uppercase tracking-wider text-center">
-                  Stock
+                  Variants
                 </th>
                 <th className="px-6 py-4 font-semibold uppercase tracking-wider text-right">
                   Actions

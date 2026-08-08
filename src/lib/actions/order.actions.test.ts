@@ -87,16 +87,14 @@ describe("Order Server Actions", () => {
     const mockItems = [{ id: 1, size: "50ml", quantity: 2 }];
 
     it("should successfully create an order and clear the cart", async () => {
-      // Arrange: variant priced at 100 with enough stock
+      // Arrange: variant priced at 100 and switched on
       (prisma.productVariant.findFirst as any).mockResolvedValue({
         id: 99,
         productId: 1,
         volume: "50ml",
         price: 100,
-        stock: 5,
+        isAvailable: true,
       });
-      // Atomic decrement succeeds (one row affected)
-      (prisma.productVariant.updateMany as any).mockResolvedValue({ count: 1 });
 
       (prisma.order.create as any).mockResolvedValue({ id: 1001 });
 
@@ -108,11 +106,8 @@ describe("Order Server Actions", () => {
         where: { productId: 1, volume: "50ml" },
       });
 
-      // Atomic, conditional decrement (stock guard lives in the where clause)
-      expect(prisma.productVariant.updateMany).toHaveBeenCalledWith({
-        where: { id: 99, stock: { gte: 2 } },
-        data: { stock: { decrement: 2 } },
-      });
+      // Availability is a toggle now — nothing is decremented.
+      expect(prisma.productVariant.updateMany).not.toHaveBeenCalled();
 
       const callArgs = (prisma.order.create as any).mock.calls[0][0];
       expect(callArgs.data).toEqual(
@@ -139,24 +134,32 @@ describe("Order Server Actions", () => {
       expect(result).toEqual({ success: true, orderId: 1001 });
     });
 
-    it("should fail if the atomic stock decrement affects no rows", async () => {
+    it("should fail if the variant is switched off", async () => {
       // Arrange
       (prisma.productVariant.findFirst as any).mockResolvedValue({
         id: 99,
         price: 100,
-        stock: 1,
+        isAvailable: false,
       });
-      // Conditional decrement matched nothing -> insufficient stock
-      (prisma.productVariant.updateMany as any).mockResolvedValue({ count: 0 });
 
       // Act
       const result = await createOrder(mockOrderData, mockItems);
 
       // Assert
       expect(result.success).toBe(false);
-      expect(result.message).toContain("not available in the requested quantity");
-      // Flagged as stock-related so the client can reconcile the cart (G10)
-      expect(result.reason).toBe("insufficient_stock");
+      expect(result.message).toContain("currently unavailable");
+      // Flagged so the client can reconcile the cart (G10)
+      expect(result.reason).toBe("unavailable");
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it("should fail if the requested variant does not exist", async () => {
+      (prisma.productVariant.findFirst as any).mockResolvedValue(null);
+
+      const result = await createOrder(mockOrderData, mockItems);
+
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe("unavailable");
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
 
@@ -183,7 +186,7 @@ describe("Order Server Actions", () => {
       // Assert — rejected before any DB work
       expect(result.success).toBe(false);
       expect(result.message).toContain("Card payments");
-      expect(prisma.productVariant.updateMany).not.toHaveBeenCalled();
+      expect(prisma.productVariant.findFirst).not.toHaveBeenCalled();
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
 
@@ -199,7 +202,7 @@ describe("Order Server Actions", () => {
       // Assert — rejected before any validation or DB work
       expect(result.success).toBe(false);
       expect(result.message).toContain("Unauthorized");
-      expect(prisma.productVariant.updateMany).not.toHaveBeenCalled();
+      expect(prisma.productVariant.findFirst).not.toHaveBeenCalled();
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
   });
@@ -273,18 +276,10 @@ describe("Order Server Actions", () => {
   });
 
   describe("updateOrderStatus", () => {
-    it("should atomically cancel and restock when transitioning to CANCELLED", async () => {
+    it("should atomically cancel without touching variants", async () => {
       // Arrange
-      const existingOrder = {
-        id: 5,
-        status: "PENDING",
-        items: [{ productId: 1, size: "50ml", quantity: 2 }],
-      };
-
-      (prisma.order.findUnique as any).mockResolvedValue(existingOrder);
-      // The atomic flip to CANCELLED performed exactly one row
+      (prisma.order.findUnique as any).mockResolvedValue({ status: "PENDING" });
       (prisma.order.updateMany as any).mockResolvedValue({ count: 1 });
-      (prisma.productVariant.updateMany as any).mockResolvedValue({ count: 1 });
 
       // Act
       const result = await updateOrderStatus(5, "CANCELLED");
@@ -295,64 +290,16 @@ describe("Order Server Actions", () => {
         data: { status: "CANCELLED" },
       });
 
-      // Restock via atomic increment (keyed by productId + volume)
-      expect(prisma.productVariant.updateMany).toHaveBeenCalledWith({
-        where: { productId: 1, volume: "50ml" },
-        data: { stock: { increment: 2 } },
-      });
+      // Quantities aren't tracked, so cancelling restocks nothing.
+      expect(prisma.productVariant.updateMany).not.toHaveBeenCalled();
 
       expect(revalidatePath).toHaveBeenCalledWith("/admin/orders");
       expect(result.success).toBe(true);
     });
 
-    it("should restock by variantId when the order item has one", async () => {
-      // Arrange: item carries the precise variant FK
-      (prisma.order.findUnique as any).mockResolvedValue({
-        id: 6,
-        status: "PENDING",
-        items: [{ productId: 1, variantId: 99, size: "50ml", quantity: 3 }],
-      });
-      (prisma.order.updateMany as any).mockResolvedValue({ count: 1 });
-      (prisma.productVariant.updateMany as any).mockResolvedValue({ count: 1 });
-
-      const result = await updateOrderStatus(6, "CANCELLED");
-
-      // Restock targets the variant by id, not by (productId, volume)
-      expect(prisma.productVariant.updateMany).toHaveBeenCalledWith({
-        where: { id: 99 },
-        data: { stock: { increment: 3 } },
-      });
-      expect(result.success).toBe(true);
-    });
-
-    it("should log an error when a restock updateMany affects no rows", async () => {
-      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-      (prisma.order.findUnique as any).mockResolvedValue({
-        id: 7,
-        status: "PENDING",
-        items: [{ productId: 1, variantId: 42, size: "50ml", quantity: 2 }],
-      });
-      (prisma.order.updateMany as any).mockResolvedValue({ count: 1 });
-      // Variant no longer matches (renamed/deleted) -> no row updated
-      (prisma.productVariant.updateMany as any).mockResolvedValue({ count: 0 });
-
-      const result = await updateOrderStatus(7, "CANCELLED");
-
-      expect(result.success).toBe(true);
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("restock no-op")
-      );
-      errorSpy.mockRestore();
-    });
-
-    it("should just update status without touching stock if status is NOT CANCELLED", async () => {
+    it("should just update status when the target is NOT CANCELLED", async () => {
       // Arrange
-      (prisma.order.findUnique as any).mockResolvedValue({
-        id: 5,
-        status: "PENDING",
-        items: [{ productId: 1, size: "50ml", quantity: 2 }],
-      });
+      (prisma.order.findUnique as any).mockResolvedValue({ status: "PENDING" });
 
       // Act
       const result = await updateOrderStatus(5, "SHIPPED");
@@ -370,9 +317,7 @@ describe("Order Server Actions", () => {
     it("should reject an invalid transition out of a terminal state", async () => {
       // Arrange: order already delivered (terminal)
       (prisma.order.findUnique as any).mockResolvedValue({
-        id: 5,
         status: "DELIVERED",
-        items: [],
       });
 
       // Act

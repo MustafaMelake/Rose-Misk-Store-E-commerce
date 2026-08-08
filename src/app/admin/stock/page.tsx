@@ -1,39 +1,29 @@
 import React from "react";
 import Image from "next/image";
-import { PackageOpen, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { getInventoryProducts } from "@/lib/actions/product.actions";
 import { formatCurrency } from "@/lib/format";
 
 export const metadata = {
-  title: "Inventory & Stock | Admin Dashboard",
+  title: "Inventory & Availability | Admin Dashboard",
 };
 
 export default async function StockPage() {
   const inventoryVariants = await getInventoryProducts();
 
-  const getStockStatus = (stock: number) => {
-    if (stock === 0) {
-      return {
-        label: "Out of Stock",
-        color: "text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400",
-        icon: XCircle,
-      };
-    }
-    if (stock <= 5) {
-      return {
-        label: "Low Stock",
-        color:
-          "text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
-        icon: AlertCircle,
-      };
-    }
-    return {
-      label: "In Stock",
-      color:
-        "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400",
-      icon: CheckCircle2,
-    };
-  };
+  const getAvailabilityStatus = (isAvailable: boolean) =>
+    isAvailable
+      ? {
+          label: "Available",
+          color:
+            "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400",
+          icon: CheckCircle2,
+        }
+      : {
+          label: "Out of Stock",
+          color: "text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400",
+          icon: XCircle,
+        };
 
   return (
     <div className="flex-1 space-y-2 p-2 pt-1 min-h-screen">
@@ -44,7 +34,7 @@ export default async function StockPage() {
             Inventory Management
           </h1>
           <p className="text-gray-500 dark:text-zinc-400 mt-1">
-            Monitor stock levels across all fragrance volumes and variants.
+            Monitor availability across all fragrance volumes and variants.
           </p>
         </div>
       </div>
@@ -56,14 +46,14 @@ export default async function StockPage() {
           <div className="col-span-5">Product Details</div>
           <div className="col-span-2 text-center">Volume</div>
           <div className="col-span-2 text-center">Price</div>
-          <div className="col-span-3 text-right">Stock Status</div>
+          <div className="col-span-3 text-right">Availability</div>
         </div>
 
         {/* Product Variant Rows */}
         <div className="divide-y divide-gray-100 dark:divide-zinc-800">
           {inventoryVariants.length > 0 ? (
             inventoryVariants.map((variant) => {
-              const status = getStockStatus(variant.stock);
+              const status = getAvailabilityStatus(variant.isAvailable);
               const StatusIcon = status.icon;
               const product = variant.product;
 
@@ -112,17 +102,11 @@ export default async function StockPage() {
                     </span>
                   </div>
 
-                  {/* Stock Status */}
+                  {/* Availability */}
                   <div className="col-span-1 md:col-span-3 flex justify-between md:justify-end items-center gap-3 mt-4 md:mt-0">
-                    <div className="flex flex-col items-end">
-                      <span className="text-2xl font-black text-gray-900 dark:text-white">
-                        {variant.stock}
-                      </span>
-                      <span className="text-xs text-gray-500 uppercase tracking-wide">
-                        Pieces Left
-                      </span>
-                    </div>
-
+                    <span className="md:hidden text-sm text-gray-500">
+                      Availability:
+                    </span>
                     <div
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold ${status.color}`}
                     >

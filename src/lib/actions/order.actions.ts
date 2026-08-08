@@ -49,12 +49,12 @@ function toNumber(value: Prisma.Decimal | number | null | undefined): number {
 }
 
 /**
- * Thrown inside the order transaction when a line can't be fulfilled from
- * stock. A distinct subclass (still a PublicError, so its Arabic message is
- * safe to surface) lets the caller flag the failure as stock-related, which
- * drives client-side cart reconciliation (G10).
+ * Thrown inside the order transaction when a line points at a variant that is
+ * missing or switched off. A distinct subclass (still a PublicError, so its
+ * message is safe to surface) lets the caller flag the failure as
+ * availability-related, which drives client-side cart reconciliation (G10).
  */
-class InsufficientStockError extends PublicError {}
+class VariantUnavailableError extends PublicError {}
 
 /** Arabic, per-field messages for checkout validation failures (G11), keyed by
  *  the order-input field name that Zod reports. */
@@ -71,9 +71,9 @@ export interface CreateOrderResult {
   success: boolean;
   orderId?: number;
   message?: string;
-  /** Present when the failure was caused by insufficient stock, so the client
-   *  can reconcile the cart to what is actually available (G10). */
-  reason?: "insufficient_stock";
+  /** Present when the failure was caused by an unavailable variant, so the
+   *  client can reconcile the cart against what is still sellable (G10). */
+  reason?: "unavailable";
   /** Per-field Arabic messages keyed by order-input field name (G11). */
   fieldErrors?: Record<string, string>;
 }
@@ -113,7 +113,7 @@ export async function createOrder(
     const orderInput = parsedOrder.data;
 
     // Normalize the payload: merge duplicate (id, size) lines into one so the
-    // same variant isn't stock-checked/created twice and quantities are summed.
+    // same variant isn't checked/created twice and quantities are summed.
     const mergedItemsMap = new Map<string, OrderItemInput>();
     for (const item of parsedItems.data) {
       const key = `${item.id}__${item.size}`;
@@ -146,23 +146,11 @@ export async function createOrder(
           where: { productId: item.id, volume: item.size },
         });
 
-        if (!variant) {
-          throw new InsufficientStockError(
-            `Product size ${item.size} is not available in the requested quantity.`
-          );
-        }
-
-        // Atomic, conditional decrement: the stock check and the write happen
-        // in a single statement, so two shoppers cannot both buy the last unit.
-        // If the guard fails, count === 0 and the whole transaction rolls back.
-        const updated = await tx.productVariant.updateMany({
-          where: { id: variant.id, stock: { gte: item.quantity } },
-          data: { stock: { decrement: item.quantity } },
-        });
-
-        if (updated.count === 0) {
-          throw new InsufficientStockError(
-            `Product size ${item.size} is not available in the requested quantity.`
+        // Availability is a plain toggle now: the variant must exist and be
+        // switched on. Nothing is decremented — quantities are not tracked.
+        if (!variant || variant.isAvailable !== true) {
+          throw new VariantUnavailableError(
+            `Product size ${item.size} is currently unavailable.`
           );
         }
 
@@ -174,8 +162,8 @@ export async function createOrder(
           quantity: item.quantity,
           price: unitPrice,
           size: item.size,
-          // Link the exact variant so cancel-restock can target it by id even
-          // if the volume label is later renamed.
+          // Link the exact variant so order history still resolves to the row
+          // that was bought even if the volume label is later renamed.
           variantId: variant.id,
         });
       }
@@ -221,12 +209,12 @@ export async function createOrder(
     return { success: true, orderId: result.id };
   } catch (error) {
     console.error("createOrder error:", error);
-    // Flag stock failures so the client can auto-reconcile the cart (G10).
-    if (error instanceof InsufficientStockError) {
+    // Flag availability failures so the client can auto-reconcile the cart (G10).
+    if (error instanceof VariantUnavailableError) {
       return {
         success: false,
         message: error.message,
-        reason: "insufficient_stock",
+        reason: "unavailable",
       };
     }
     return {
@@ -333,7 +321,7 @@ export async function updateOrderStatus(
 
     const existingOrder = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true },
+      select: { status: true },
     });
 
     if (!existingOrder) {
@@ -350,45 +338,21 @@ export async function updateOrderStatus(
       };
     }
 
-    await prisma.$transaction(async (tx) => {
-      if (newStatus === "CANCELLED") {
-        // Flip to CANCELLED only if it isn't already — atomic so two
-        // concurrent cancellations can't both restock the same order.
-        const res = await tx.order.updateMany({
-          where: { id: orderId, status: { not: "CANCELLED" } },
-          data: { status: "CANCELLED" },
-        });
-
-        // Restock only when this call is the one that performed the cancel.
-        if (res.count === 1) {
-          for (const item of existingOrder.items) {
-            // Prefer the precise variantId FK; fall back to (productId, volume)
-            // for legacy rows written before variantId existed.
-            const restock = await tx.productVariant.updateMany({
-              where: item.variantId
-                ? { id: item.variantId }
-                : { productId: item.productId, volume: item.size },
-              data: { stock: { increment: item.quantity } },
-            });
-
-            // A no-op restock means the variant was renamed/deleted — the units
-            // are silently lost. Surface it instead of swallowing it.
-            if (restock.count === 0) {
-              console.error(
-                `[order ${orderId}] restock no-op for product ${item.productId} ` +
-                  `(variantId=${item.variantId ?? "none"}, size=${item.size}); ` +
-                  `variant may have been renamed or removed.`
-              );
-            }
-          }
-        }
-      } else {
-        await tx.order.update({
-          where: { id: orderId },
-          data: { status: newStatus },
-        });
-      }
-    });
+    // Cancelling no longer restocks anything — quantities aren't tracked — so
+    // each branch is a single statement and needs no surrounding transaction.
+    if (newStatus === "CANCELLED") {
+      // Flip to CANCELLED only if it isn't already, so two concurrent
+      // cancellations can't both claim to have performed it.
+      await prisma.order.updateMany({
+        where: { id: orderId, status: { not: "CANCELLED" } },
+        data: { status: "CANCELLED" },
+      });
+    } else {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { status: newStatus },
+      });
+    }
 
     revalidatePath("/admin/orders");
     revalidatePath("/admin");

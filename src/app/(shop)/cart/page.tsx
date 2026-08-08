@@ -8,6 +8,7 @@ import Title from "../../../components/Title";
 import CheckOut from "../../../components/CheckOut";
 import Footer from "@/components/Footer";
 import { formatCurrency } from "@/lib/format";
+import { MAX_CART_QTY } from "@/lib/cart-limits";
 
 interface CartDisplayItem {
   id: number;
@@ -24,19 +25,14 @@ const Cart: React.FC = () => {
 
   const { products, cartItems, getPriceBySize, updateQuantity } = context;
   const [cartData, setCartData] = useState<CartDisplayItem[]>([]);
-  // G13 — surfaced when a "+" would exceed the variant's available stock.
+  // G13 — surfaced when a "+" would exceed the per-item cart limit.
   const [stockNotice, setStockNotice] = useState<string>("");
 
-  const getVariantStock = (productId: number, size: string): number => {
-    const product = products.find((p) => p.id === productId);
-    const variant = product?.variants.find((v) => v.volume === size);
-    return variant ? variant.stock : 0;
-  };
-
   const handleIncrement = (item: CartDisplayItem) => {
-    const stock = getVariantStock(item.id, item.size);
-    if (item.quantity + 1 > stock) {
-      setStockNotice(`Only ${stock} in stock for "${item.name}".`);
+    if (item.quantity + 1 > MAX_CART_QTY) {
+      setStockNotice(
+        `You can order up to ${MAX_CART_QTY} of "${item.name}" per order.`
+      );
       return;
     }
     setStockNotice("");

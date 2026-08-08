@@ -101,7 +101,7 @@ describe("Product Server Actions", () => {
       isFeatured: true,
       categoryId: 2,
       slug: "",
-      variants: [{ volume: "50ml", price: 100, stock: 10 }],
+      variants: [{ volume: "50ml", price: 100, isAvailable: true }],
     };
 
     it("should create a product, generate a slug, and revalidate paths", async () => {
@@ -117,7 +117,7 @@ describe("Product Server Actions", () => {
       expect(callArgs.data.variants.create[0]).toEqual({
         volume: "50ml",
         price: 100,
-        stock: 10,
+        isAvailable: true,
       });
 
       expect(revalidatePath).toHaveBeenCalledWith("/admin/products");
@@ -166,7 +166,7 @@ describe("Product Server Actions", () => {
       name: "Updated Perfume",
       images: [],
       categoryId: 3,
-      variants: [{ volume: "100ml", price: 150, stock: 5 }],
+      variants: [{ volume: "100ml", price: 150, isAvailable: false }],
     };
 
     it("should upsert variants and update the product's scalar fields", async () => {
@@ -193,8 +193,13 @@ describe("Product Server Actions", () => {
       // Each incoming variant is upserted by (productId, volume)
       expect(prisma.productVariant.upsert).toHaveBeenCalledWith({
         where: { productId_volume: { productId: 1, volume: "100ml" } },
-        update: { price: 150, stock: 5 },
-        create: { productId: 1, volume: "100ml", price: 150, stock: 5 },
+        update: { price: 150, isAvailable: false },
+        create: {
+          productId: 1,
+          volume: "100ml",
+          price: 150,
+          isAvailable: false,
+        },
       });
 
       // Variants no longer present are removed
@@ -344,9 +349,14 @@ describe("Product Server Actions", () => {
   });
 
   describe("getInventoryProducts", () => {
-    it("should fetch all variants ordered by stock level ascending", async () => {
+    it("should fetch all variants with unavailable ones listed first", async () => {
       const mockVariants = [
-        { id: 1, volume: "100ml", stock: 2, product: { name: "Misk" } },
+        {
+          id: 1,
+          volume: "100ml",
+          isAvailable: false,
+          product: { name: "Misk" },
+        },
       ];
       (prisma.productVariant.findMany as any).mockResolvedValue(mockVariants);
 
@@ -358,7 +368,7 @@ describe("Product Server Actions", () => {
             select: { name: true, images: true, company: true },
           },
         },
-        orderBy: { stock: "asc" },
+        orderBy: [{ isAvailable: "asc" }, { productId: "asc" }],
       });
       expect(result).toEqual(mockVariants);
     });
